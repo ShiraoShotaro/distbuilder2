@@ -1,0 +1,27 @@
+[directory]
+
+# 一時ディレクトリや T ドライブなど.
+# 環境変数文字 %HOGE% or ${HOGE} 使用可能.
+build = "<path/to/working/root>"
+
+# インストール先のルートディレクトリ
+# ここの下にライブラリ名でディレクトリが並びます.
+install = "<path/to/install/root>"
+
+# ライブラリの追加検索パス
+# ./libs はデフォルトで追加されています
+# そのほか, 独自のライブラリリストを追加できます.
+# その場合, 相対はこの config.toml から, もしくは絶対パスで指定できます.
+# 環境変数も使用可能.
+sources = []
+
+[cmake]
+# "cmake" でパスが通っている cmake を使う
+# もしくは絶対 or 相対パス
+path = "cmake"
+
+# cmake で使う generator
+# 未指定で, デフォルトで設定された generator を使う
+# 詳しくは cmake --help で確認できる.
+generator = "Visual Studio 17 2022"
+arch = "x64"
