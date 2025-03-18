@@ -142,7 +142,7 @@ def testBuild(args):
     for version in versions:
         # TODO: options
         builder = builderCls(version, {}, globalOpt)
-        args.filepath = os.path.join(rootdir, f"testbuild.{builder.hash}.json")
+        args.filepath = os.path.join(rootdir, f"testbuild.{builder.libraryName}.{version}.json")
         with open(args.filepath, mode="w", encoding="utf-8") as fp:
             json.dump({
                 builder.libraryName: {"version": str(version), "options": options}

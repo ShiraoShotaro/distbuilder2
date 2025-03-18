@@ -163,7 +163,7 @@ class BuilderBase:
     def generateVersion(cls, versionString: str) -> Version:
         # general version string: "." delemeter
         # A: A=minor
-        # A.B: A=major, B=minor
+        # A.B: A=minor, B=patch
         # A.B.C: A=major, B=minor, C=patch
         # A.B.C.D: A=variant, B=major, C=minor, D=patch
         # default is 0
@@ -171,7 +171,7 @@ class BuilderBase:
         if len(vers) == 1:
             return Version(0, 0, vers[0], 0)
         if len(vers) == 2:
-            return Version(0, *vers, 0)
+            return Version(0, 0, *vers)
         if len(vers) == 3:
             return Version(0, *vers)
         else:
