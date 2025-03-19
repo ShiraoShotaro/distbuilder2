@@ -11,7 +11,7 @@ class Builder(BuilderBase):
     versions = list(signatures.keys())
 
     # --- options ---
-    # option_BuildCompression = Option(bool, True, "Build compression")
+    # option_Shared = Option(bool, False, "Build shared")
 
     # --- deps ---
     # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)

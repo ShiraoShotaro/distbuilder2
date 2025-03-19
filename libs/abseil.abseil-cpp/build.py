@@ -43,5 +43,5 @@ class Builder(BuilderBase):
 
     def export(self, config: str):
         return {
-            "_DIR": f"{self.installDir}/lib/cmake/zstd"
+            "absl_DIR": f"{self.installDir}/lib/cmake/absl"
         }
