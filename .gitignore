@@ -5,3 +5,4 @@ venv
 __pycache__/
 .pep8
 .flake8
+.vscode

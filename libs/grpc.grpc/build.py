@@ -17,7 +17,7 @@ class Builder(BuilderBase):
     # --- deps ---
     dep_abseil = Dependency("abseil.abseil-cpp")
     dep_zlib = Dependency("madler.zlib")
-    dep_cares = Dependency("c-ares.c-ares")
+    dep_cares = Dependency(".c-ares")
     dep_protobuf = Dependency("protocolbuffers.protobuf")
     dep_utf8 = Dependency("protocolbuffers.utf8_range")
     dep_re2 = Dependency("google.re2")

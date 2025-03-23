@@ -92,10 +92,13 @@ class BuilderBase:
                 hashStr += f"dep:{dep.libraryName}=<UNRESOLVED>\n"
             else:
                 depConf = depsConfValue[dep.libraryName]
-                depBuilderCls, depAvailableVersions = dep.resolve(self)
+                depBuilderCls, depAvailableVersions, overrideOptions = dep.resolve(self)
                 depReqVersion = depBuilderCls.generateVersion(depConf["version"])
                 if depReqVersion not in depAvailableVersions:
                     raise BuildError("Version error.")
+                for ovrdOptKey, ovrdOptValue in overrideOptions.items():
+                    if depConf.get(ovrdOptKey, ovrdOptValue) != ovrdOptValue:
+                        raise BuildError("Dependency Option Error")
                 depBuilder = depBuilderCls(depReqVersion, depsConfValue, globalOptions)
                 hashStr += f"dep:{dep.libraryName}={depBuilder.hash}\n"
 

@@ -42,14 +42,14 @@ def configure(args):
         for libdep in builder.dependencies:
             if not libdep.isRequired(builder):
                 continue
-            depBuilderCls, versions = libdep.resolve(builder)
+            depBuilderCls, versions, overrideOptions = libdep.resolve(builder)
             if libdep.libraryName not in deps:
-                deps[libdep.libraryName] = (depBuilderCls, versions)
+                deps[libdep.libraryName] = (depBuilderCls, versions, overrideOptions)
             else:
                 deps[libdep.libraryName][1].intersection_update(versions)
 
     # deps から version の固定
-    for libdep, (depBuilderCls, versions) in deps.items():
+    for libdep, (depBuilderCls, versions, overrideOptions) in deps.items():
         if libdep in jdict:
             # 依存しているライブラリが既に指定されている
             # バージョンが合致するか調べる
@@ -69,6 +69,8 @@ def configure(args):
             }
         else:
             raise distbuilder.BuildError("No library version is available.")
+        # オプション上書き
+        jdict[libdep]["options"].update(overrideOptions)
 
     # dep 含めた状態で exports を決定
     exports = dict()
@@ -85,6 +87,7 @@ def configure(args):
         fp.writelines([f"set({k} {v})\n" for k, v in exports.items()])
 
 
+# TODO: 依存ライブラリに要求するオプションの validation をしないといけない
 def build(args):
     globalOpt = distbuilder.GlobalOptions(
         cleanBuild=args.clean,
@@ -95,12 +98,15 @@ def build(args):
         jdict = json.load(fp)
 
     builtLibs = set()
-    buildLibs = set([lib for lib in jdict.keys()])
+    buildLibs = dict()
+
+    for lib in jdict.keys():
+        builderCls, path = distbuilder.searchBuilderAndPath(lib)
+        buildLibs[lib] = builderCls(jdict[lib]["version"], jdict, globalOpt)
+
     while len(buildLibs) > 0:
         builtAny = False
-        for lib in buildLibs.copy():
-            builderCls, path = distbuilder.searchBuilderAndPath(lib)
-            builder = builderCls(jdict[lib]["version"], jdict, globalOpt)
+        for lib, builder in buildLibs.copy().items():
             resolved = True
             for libdep in builder.dependencies:
                 if libdep.isRequired(builder) and libdep.libraryName not in builtLibs:
@@ -115,7 +121,7 @@ def build(args):
                 builder.build()
             else:
                 builder.log("Cached. build skip.")
-            buildLibs.remove(lib)
+            del buildLibs[lib]
             builtLibs.add(lib)
             builtAny = True
         if builtAny is False:
