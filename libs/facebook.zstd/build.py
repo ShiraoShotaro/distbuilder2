@@ -55,7 +55,7 @@ class Builder(BuilderBase):
             f"-DZSTD_ZLIB_SUPPORT={self.option_ZlibSupport}"
         ]
 
-        if self.dep_zlib.isRequired:
+        if self.dep_zlib.isRequired(self):
             depBuilder = self.dep_zlib.generateBuilder(self)
             configArgs.append(f"-DZLIB_ROOT={depBuilder.installDir}")
 

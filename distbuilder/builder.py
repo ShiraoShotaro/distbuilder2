@@ -193,7 +193,8 @@ class BuilderBase:
     def checkSignature(self, path: str, signature: str, *, signatureAlgorithm: str = "sha256"):
         import hashlib
         with open(path, mode="rb") as fp:
-            sig = hashlib.file_digest(fp, signatureAlgorithm).hexdigest()
+            sig = hashlib.file_digest(fp, signatureAlgorithm).hexdigest().lower()
+            signature = signature.lower()
             self.log(f"  Filepath = {path}")
             self.log(f"  Expected = {signature}")
             self.log(f"Calculated = {sig}")
@@ -331,6 +332,14 @@ class BuilderBase:
         self.log(f"Config = {config}")
         self.cmake(["--install", buildDir, "--config", config, "--prefix", installDir])
 
+    @_logTask
     def cmakeBuildAndInstall(self, buildDir: str, config: str, installPrefix: str = ""):
         self.cmakeBuild(buildDir, config)
         self.cmakeInstall(buildDir, config, installPrefix)
+
+    @_logTask
+    def applyPatch(self, patchFile: str, workingDirectory: str):
+        import patch
+        patchset = patch.fromfile(patchFile)
+        patchset.apply(root=workingDirectory)
+        self.log("Patch applied.")

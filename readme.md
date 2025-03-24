@@ -1,4 +1,3 @@
-
 # distbuilder
 
 外部ライブラリをビルドするためのユーティリティ.
@@ -23,13 +22,15 @@ python.exe -m pip install -r pip-requirements.txt
 
 他人に配るものでもないし, 完全に私の必要用途で最適化されていますが, libs/<ライブラリ名>/config.toml を確認します.
 
-ビルドバリアントを設定すれば, あとは以下のコマンドでビルドが行われます.
+ここまだ暫定：
 
 ```
-python main.py <ライブラリ名>
+python run.py test <ライブラリ名> --config Debug
 ```
 
-`--clean` オプションで, ダウンロード済みソースを削除できます.
+`--config` は今は使ってないけどとりあえず Debug か Release か指定してください
+
+ライブラリ名は、 libs の下にあるディレクトリをフルで指定するか, "." の下のみを指定します.
 
 ## 結果
 

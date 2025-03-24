@@ -56,5 +56,5 @@ class Builder(BuilderBase):
 
     def export(self, config: str):
         return {
-            "zstd_DIR": f"{self.installDir}/lib/cmake/zstd"
+            "OpenEXR_DIR": f"{self.installDir}/lib/cmake/OpenEXR"
         }

@@ -11,7 +11,7 @@ class Builder(BuilderBase):
     versions = list(signatures.keys())
 
     # --- deps ---
-    dep_abseil = Dependency("abseil.abseil-cpp",)
+    dep_abseil = Dependency("abseil.abseil-cpp")
 
     def build(self):
         self.download(
@@ -37,5 +37,5 @@ class Builder(BuilderBase):
 
     def export(self, config: str):
         return {
-            "absl_DIR": f"{self.installDir}/lib/cmake/absl"
+            "utf8_range_DIR": f"{self.installDir}/lib/cmake/utf8_range"
         }
