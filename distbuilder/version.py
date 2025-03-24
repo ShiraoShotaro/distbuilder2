@@ -33,10 +33,14 @@ class Version:
             return f"{self._minor}.{self._patch}"
 
     def __lt__(self, other: "Version") -> bool:
-        return (self._variant < other.variant
-                and self._major < other.major
-                and self._minor < other.minor
-                and self._patch < other.patch)
+        if self._variant != other._variant:
+            return self._variant < other._variant
+        elif self._major != other._major:
+            return self._major < other._major
+        elif self._minor != other._minor:
+            return self._minor < other._minor
+        else:
+            return self._patch < other._patch
 
     def __eq__(self, other: "Version") -> bool:
         return (self._variant == other.variant
