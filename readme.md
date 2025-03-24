@@ -2,11 +2,11 @@
 
 外部ライブラリをビルドするためのユーティリティ.
 
-## config
+## preference
 
-`config-template.toml` をコピーして `config.toml` にリネームします.
+`preference-template.toml` をコピーして `preference.toml` にリネームします.
 
-`config.toml` の説明に従って記述を書き換えます.
+`preference.toml` の説明に従って記述を書き換えます.
 
 ## python venv
 

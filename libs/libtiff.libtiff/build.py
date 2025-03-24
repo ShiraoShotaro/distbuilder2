@@ -19,7 +19,9 @@ class Builder(BuilderBase):
     # --- deps ---
     dep_zlib = Dependency("madler.zlib", condition=lambda self: self.option_WithZlib.value)
     dep_zstd = Dependency("facebook.zstd", condition=lambda self: self.option_WithZStd.value)
-    dep_libdeflate = Dependency("ebiggers.libdeflate", condition=lambda self: self.option_WithDeflate.value)
+    dep_libdeflate = Dependency("ebiggers.libdeflate",
+                                condition=lambda self: self.option_WithDeflate.value,
+                                overrideOptions={"ZlibSupport": True})
 
     def build(self):
         self.download(
@@ -28,7 +30,7 @@ class Builder(BuilderBase):
             f"libtiff-v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
             "src.zip",
             signature=Builder.signatures[self.version])
-        # self.unzip("src.zip", "src")
+        self.unzip("src.zip", "src")
 
         srcPath = f"src/libtiff-v{self.version.major}.{self.version.minor}.{self.version.patch}"
 
@@ -41,21 +43,24 @@ class Builder(BuilderBase):
             "-Dtiff-tools=0",
             f"-Dzlib={self.option_WithZlib}",
             f"-Dzstd={self.option_WithZStd}",
+            f"-DBUILD_SAHRED_LIBS={self.option_Shared}"
         ]
-
-        roots = list()
 
         if self.dep_zlib.isRequired(self):
             configArgs.append(f"-DZLIB_ROOT={self.dep_zlib.generateBuilder(self).installDir}")
         if self.dep_zstd.isRequired(self):
-            # configArgs.append(f"-DZSTD_ROOT={self.dep_zstd.generateBuilder(self).installDir}")
-            roots.append(self.dep_zstd.generateBuilder(self).installDir)
+            configArgs.append(f"-Dzstd_DIR={self.dep_zstd.generateBuilder(self).installDir}/lib/cmake/zstd")
         if self.dep_libdeflate.isRequired(self):
-            # configArgs.append(
-            # f"-DDeflate_ROOT={self.dep_libdeflate.generateBuilder(self).installDir}")
-            roots.append(self.dep_libdeflate.generateBuilder(self).installDir)
+            configArgs.append(
+                f"-Dlibdeflate_DIR={self.dep_libdeflate.generateBuilder(self).installDir}/lib/cmake/libdeflate")
 
-        configArgs.append("-DCMAKE_FIND_ROOT_PATH={}".format(";".join(roots)))
+        # Apply patch
+        self.applyPatch(
+            f"v{self.version.major}.{self.version.minor}.{self.version.patch}/FindDeflate.cmake.patch",
+            srcPath)
+        self.applyPatch(
+            f"v{self.version.major}.{self.version.minor}.{self.version.patch}/ZSTDCodec.cmake.patch",
+            srcPath)
 
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")

@@ -338,8 +338,31 @@ class BuilderBase:
         self.cmakeInstall(buildDir, config, installPrefix)
 
     @_logTask
-    def applyPatch(self, patchFile: str, workingDirectory: str):
-        import patch
-        patchset = patch.fromfile(patchFile)
-        patchset.apply(root=workingDirectory)
+    def copyFile(self, srcFile: str, destFile: str, *, allowOverwrite=False):
+        srcFile = os.path.join(self.buildDir, srcFile)
+        destFile = os.path.join(self.buildDir, destFile)
+        if os.path.exists(destFile):
+            if allowOverwrite is True:
+                os.remove(destFile)
+            else:
+                raise BuildError(f"Failed to copy file. {destFile} is already existing.")
+        self.log("File copying...")
+        self.log(f"-- src: {srcFile}")
+        self.log(f"-- dst: {destFile}")
+        shutil.copy(srcFile, destFile)
+        self.log("Copied.")
+
+    @_logTask
+    def applyPatch(self, patchFile: str, root: str):
+        import patch_ng
+        patchFile = os.path.abspath(patchFile)
+        root = os.path.join(self.buildDir, root)
+        self.log("Patch applying...")
+        self.log(f"-- patch file: {patchFile}")
+        self.log(f"-- root dir: {root}")
+
+        patchset = patch_ng.fromfile(patchFile)
+        ret = patchset.apply(root=root)
+        if ret is False:
+            raise BuildError("Failed to apply patch.")
         self.log("Patch applied.")

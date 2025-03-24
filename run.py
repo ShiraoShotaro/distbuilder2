@@ -89,6 +89,17 @@ def configure(args):
 
 # TODO: 依存ライブラリに要求するオプションの validation をしないといけない
 def build(args):
+    class CwdScope:
+        def __init__(self):
+            self._cwd = None
+
+        def __enter__(self, *_):
+            self._cwd = os.getcwd()
+
+        def __exit__(self, *_):
+            if self._cwd is not None:
+                os.chdir(self._cwd)
+
     globalOpt = distbuilder.GlobalOptions(
         cleanBuild=args.clean,
         forceDownload=args.forceDownload,
@@ -102,11 +113,11 @@ def build(args):
 
     for lib in jdict.keys():
         builderCls, path = distbuilder.searchBuilderAndPath(lib)
-        buildLibs[lib] = builderCls(jdict[lib]["version"], jdict, globalOpt)
+        buildLibs[lib] = (builderCls(jdict[lib]["version"], jdict, globalOpt), path)
 
     while len(buildLibs) > 0:
         builtAny = False
-        for lib, builder in buildLibs.copy().items():
+        for lib, (builder, path) in buildLibs.copy().items():
             resolved = True
             for libdep in builder.dependencies:
                 if libdep.isRequired(builder) and libdep.libraryName not in builtLibs:
@@ -117,8 +128,11 @@ def build(args):
 
             # build
             if not os.path.exists(builder.installDir) or len(os.listdir(builder.installDir)) == 0:
-                builder.prepare()
-                builder.build()
+                with CwdScope():
+                    print("PATH!!!", path)
+                    os.chdir(os.path.dirname(path))
+                    builder.prepare()
+                    builder.build()
             else:
                 builder.log("Cached. build skip.")
             del buildLibs[lib]
@@ -140,8 +154,10 @@ def testBuild(args):
     for opt in args.option:
         k, v = opt.split("=", 2)
         option: distbuilder.Option = getattr(builderCls, f"option_{k}")
-        v = option.type(v)
+        if option.type is not str:
+            v = option.type(int(v))
         options[k] = v
+        print(f"Override option: {k} = {v}")
 
     rootdir = os.path.join(distbuilder.Preference.get().buildRootDirectory, "testbuild")
     os.makedirs(rootdir, exist_ok=True)

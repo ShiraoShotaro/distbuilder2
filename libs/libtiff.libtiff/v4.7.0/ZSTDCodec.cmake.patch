@@ -1,0 +1,13 @@
+--- cmake/ZSTDCodec.cmake
++++ cmake/ZSTDCodec.cmake
+@@ -29,8 +29,9 @@ set(ZSTD_SUPPORT FALSE)
+ set(ZSTD_USABLE FALSE)
+ 
+ find_package(ZSTD)
++find_package(zstd CONFIG)
+ 
+-if(ZSTD_FOUND)
++if(NOT TARGET ZSTD::ZSTD)
+     if(TARGET zstd::libzstd_shared)
+         add_library(ZSTD::ZSTD ALIAS zstd::libzstd_shared)
+         set(ZSTD_HAVE_DECOMPRESS_STREAM ON)

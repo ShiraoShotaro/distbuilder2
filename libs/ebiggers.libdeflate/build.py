@@ -12,7 +12,7 @@ class Builder(BuilderBase):
     versions = list(signatures.keys())
 
     # --- options ---
-    option_Shared = Option(bool, False, "Build shared")
+    option_Shared = Option(bool, True, "Build shared")
     option_Static = Option(bool, True, "Build static")
     option_CompressionSupport = Option(bool, True, "Compression support")
     option_DecompressionSupport = Option(bool, True, "Decompression support")
