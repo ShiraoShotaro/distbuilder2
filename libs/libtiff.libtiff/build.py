@@ -18,7 +18,7 @@ class Builder(BuilderBase):
 
     # --- deps ---
     dep_zlib = Dependency("madler.zlib", condition=lambda self: self.option_WithZlib.value)
-    dep_zstd = Dependency("facebook.zstd", condition=lambda self: self.option_WithZStd.value)
+    dep_zstd = Dependency("facebook.zstd", condition=lambda self: self.option_WithZstd.value)
     dep_libdeflate = Dependency("ebiggers.libdeflate",
                                 condition=lambda self: self.option_WithDeflate.value,
                                 overrideOptions={"ZlibSupport": True})
@@ -42,7 +42,7 @@ class Builder(BuilderBase):
             "-Dtiff-tests=0",
             "-Dtiff-tools=0",
             f"-Dzlib={self.option_WithZlib}",
-            f"-Dzstd={self.option_WithZStd}",
+            f"-Dzstd={self.option_WithZstd}",
             f"-DBUILD_SHARED_LIBS={self.option_Shared}"
         ]
 
