@@ -1,0 +1,4 @@
+--- CMakeLists.txt
++++ CMakeLists.txt
+@@ -482,0 +483 @@
++include (GNUInstallDirs)

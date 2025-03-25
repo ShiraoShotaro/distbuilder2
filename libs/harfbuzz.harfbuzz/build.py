@@ -4,7 +4,7 @@ from distbuilder import BuilderBase, Option, Dependency, Version
 class Builder(BuilderBase):
 
     signatures = {
-        Version(0, 11, 0, 0): "E17ED95300118C1D8091764692A16061AE03F8554E3D76DA8276FD847D78B517",
+        Version(0, 11, 0, 0): "e17ed95300118c1d8091764692a16061ae03f8554e3d76da8276fd847d78b517",
     }
 
     recipeVersion = 0
@@ -23,6 +23,12 @@ class Builder(BuilderBase):
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
         ]
+
+        # Apply patch
+        # -- INSTALL_INCLUDEDIR が定義されてなくて include dir がおかしくなる
+        self.applyPatch(
+            f"v{self.version.major}.{self.version.minor}.{self.version.patch}/CMakeLists.txt.patch",
+            srcPath)
 
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
