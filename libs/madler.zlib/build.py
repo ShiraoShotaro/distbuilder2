@@ -32,7 +32,5 @@ class Builder(BuilderBase):
         self.cmakeBuild("build", "Debug")
         self.cmakeInstall("build", "Debug")
 
-    def export(self, config: str):
-        return {
-            "ZLIB_ROOT": self.installDir
-        }
+    def export(self, toolchain):
+        toolchain.setDirpathVariable("ZLIB_ROOT", self.installDir, "Path to ZLIB root.")

@@ -14,9 +14,6 @@ class Builder(BuilderBase):
     option_Shared = Option(bool, False, "Build shared")
     option_BuildGmock = Option(bool, False, "Build gmock")
 
-    # --- deps ---
-    # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
-
     def build(self):
         self.download(
             "https://github.com/google/googletest/archive/refs/tags/"
@@ -39,7 +36,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "GTest_DIR": f"{self.installDir}/lib/cmake/GTest"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("GTest")

@@ -15,7 +15,8 @@ class Builder(BuilderBase):
     option_EnableThreading = Option(bool, True, "Enable threading")
 
     # --- deps ---
-    dep_libdeflate = Dependency("ebiggers.libdeflate", overrideOptions={"ZlibSupport": True})
+    dep_libdeflate = Dependency("ebiggers.libdeflate",
+                                overrideOptions={"ZlibSupport": True})
     dep_Imath = Dependency("AcademySoftwareFoundation.Imath")
 
     def build(self):
@@ -46,15 +47,11 @@ class Builder(BuilderBase):
             "-DOPENEXR_TEST_LIBRARIES=0",
             "-DOPENEXR_TEST_PYTHON=0",
             "-DOPENEXR_TEST_TOOLS=0",
-            f"-Dlibdeflate_DIR={self.dep_libdeflate.generateBuilder(self).installDir}/lib/cmake/libdeflate",
-            f"-DImath_DIR={self.dep_Imath.generateBuilder(self).installDir}/lib/cmake/Imath",
         ]
 
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "OpenEXR_DIR": f"{self.installDir}/lib/cmake/OpenEXR"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("OpenEXR")

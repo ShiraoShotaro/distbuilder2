@@ -28,7 +28,6 @@ class Builder(BuilderBase):
 
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
-            f"-Dlibjpeg-turbo_DIR={self.dep_jpeg.generateBuilder(self).installDir}/lib/cmake/libjpeg-turbo",
             f"-DBUILD_SHARED_LIBS={self.option_Shared}",
             "-DUHDR_BUILD_BENCHMARK=0",
             "-DUHDR_BUILD_DEPS=0",
@@ -54,7 +53,7 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            # "ultrahdr_DIR": f"{self.installDir}/lib/cmake/ultrahdr"
-        }
+    def export(self, toolchain):
+        # TODO:
+        # toolchain.setDir("absl")
+        pass

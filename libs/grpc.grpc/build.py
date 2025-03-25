@@ -17,7 +17,7 @@ class Builder(BuilderBase):
     # --- deps ---
     dep_abseil = Dependency("abseil.abseil-cpp")
     dep_zlib = Dependency("madler.zlib")
-    dep_cares = Dependency(".c-ares")
+    dep_cares = Dependency("c-ares.c-ares")
     dep_protobuf = Dependency("protocolbuffers.protobuf")
     dep_utf8 = Dependency("protocolbuffers.utf8_range")
     dep_re2 = Dependency("google.re2")
@@ -36,7 +36,6 @@ class Builder(BuilderBase):
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
             "-DgRPC_ABSL_PROVIDER=package",
-            f"-Dabsl_DIR={self.dep_abseil.generateBuilder(self).installDir}/lib/cmake/absl",
             "-DgRPC_BUILD_CODEGEN=1",
             "-DgRPC_BUILD_GRPCPP_OTEL_PLUGIN=0",
             "-DgRPC_BUILD_GRPC_CPP_PLUGIN=1",
@@ -49,20 +48,15 @@ class Builder(BuilderBase):
             "-DgRPC_BUILD_MSVC_MP_COUNT=0",
             "-DgRPC_BUILD_TESTS=0",
             "-DgRPC_CARES_PROVIDER=package",
-            f"-Dc-ares_DIR={self.dep_cares.generateBuilder(self).installDir}/lib/cmake/c-ares",
             "-DgRPC_DOWNLOAD_ARCHIVES=0",
             "-DgRPC_INSTALL=1",
             "-DgRPC_MSVC_STATIC_RUNTIME=0",  # Use MD
             "-DgRPC_PROTOBUF_PROVIDER=package",
-            f"-DProtobuf_DIR={self.dep_protobuf.generateBuilder(self).installDir}/lib/cmake/protobuf",
-            f"-Dutf8_range_DIR={self.dep_utf8.generateBuilder(self).installDir}/lib/cmake/utf8_range",
+            # f"-DProtobuf_DIR={self.dep_protobuf.generateBuilder(self).installDir}/lib/cmake/protobuf",
             "-DgRPC_RE2_PROVIDER=package",
-            f"-Dre2_DIR={self.dep_re2.generateBuilder(self).installDir}/lib/cmake/re2",
             "-DgRPC_SSL_PROVIDER=package",
-            f"-DOPENSSL_ROOT_DIR={self.dep_ssl.generateBuilder(self).installDir}",
             "-DgRPC_USE_PROTO_LITE=0",
             "-DgRPC_ZLIB_PROVIDER=package",
-            f"-DZLIB_ROOT={self.dep_zlib.generateBuilder(self).installDir}",
             f"-DZLIB_USE_STATIC_LIBS={self.option_UseStaticZlib}",
         ]
 
@@ -70,7 +64,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "gRPC_DIR": f"{self.installDir}/lib/cmake/grpc"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("gRPC", "lib/cmake/grpc")

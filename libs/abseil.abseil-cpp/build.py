@@ -41,7 +41,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "absl_DIR": f"{self.installDir}/lib/cmake/absl"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("absl")

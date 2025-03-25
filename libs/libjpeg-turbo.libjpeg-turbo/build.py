@@ -11,11 +11,8 @@ class Builder(BuilderBase):
     versions = list(signatures.keys())
 
     # --- options ---
-    option_Static = Option(bool, True, "Build static")
-    option_Shared = Option(bool, True, "Build shared")
-
-    # --- deps ---
-    # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
+    # option_Static = Option(bool, True, "Build static")
+    option_Shared = Option(bool, False, "Build shared")
 
     def build(self):
         self.download(
@@ -30,15 +27,13 @@ class Builder(BuilderBase):
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
             f"-DENABLE_SHARED={self.option_Shared}",
-            f"-DENABLE_STATIC={self.option_Static}",
+            f"-DENABLE_STATIC={not self.option_Shared.value}",
         ]
 
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "libjpeg-turbo_DIR": f"{self.installDir}/lib/cmake/libjpeg-turbo",
-            "JPEG_ROOT": f"{self.installDir}",
-        }
+    def export(self, toolchain):
+        toolchain.setDir("libjpeg-turbo")
+        toolchain.setDirpathVariable("JPEG_ROOT", self.installDir, "Path to JPEG root.")

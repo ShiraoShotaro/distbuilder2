@@ -43,15 +43,9 @@ class Builder(BuilderBase):
             f"-DZSTD_ZLIB_SUPPORT={self.option_ZlibSupport}"
         ]
 
-        if self.version.match(0, 1, 5, 6):
-            # https://github.com/facebook/zstd/issues/3999
-            configArgs.append(f"-DCMAKE_RC_FLAGS=-I{self.buildDir}/{srcPath}/lib")
-
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "zstd_DIR": f"{self.installDir}/lib/cmake/zstd"
-        }
+    def export(self, toolchain):
+        toolchain.setDir(PACKAGE_NAME)

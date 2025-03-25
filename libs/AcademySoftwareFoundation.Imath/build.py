@@ -13,9 +13,6 @@ class Builder(BuilderBase):
     # --- options ---
     option_Shared = Option(bool, False, "Build shared")
 
-    # --- deps ---
-    # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
-
     def build(self):
         self.download(
             "https://github.com/AcademySoftwareFoundation/Imath/archive/refs/tags/"
@@ -43,7 +40,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "Imath_DIR": f"{self.installDir}/lib/cmake/Imath"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("Imath")

@@ -53,7 +53,5 @@ class Builder(BuilderBase):
         # self.cmakeBuildAndInstall("build", "Debug")
         # self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "OpenImageIO_DIR": f"{self.installDir}/lib/cmake/OpenImageIO"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("OpenImageIO")

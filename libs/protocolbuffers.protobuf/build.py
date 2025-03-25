@@ -54,18 +54,9 @@ class Builder(BuilderBase):
             f"-Dprotobuf_WITH_ZLIB={self.option_WithZlib}",
         ]
 
-        depBuilder = self.dep_abseil.generateBuilder(self)
-        configArgs.append(f"-Dabsl_DIR={depBuilder.installDir}/lib/cmake/absl")
-
-        if self.dep_zlib.isRequired(self):
-            depBuilder = self.dep_zlib.generateBuilder(self)
-            configArgs.append(f"-DZLIB_ROOT={depBuilder.installDir}")
-
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "protobuf_DIR": f"{self.installDir}/lib/cmake/protobuf"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("Protobuf", "lib/cmake/protobuf")

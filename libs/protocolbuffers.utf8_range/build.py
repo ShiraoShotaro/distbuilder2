@@ -27,15 +27,9 @@ class Builder(BuilderBase):
             "-Dutf8_range_ENABLE_INSTALL=1",
             "-Dutf8_range_ENABLE_TESTS=0",
         ]
-
-        depBuilder = self.dep_abseil.generateBuilder(self)
-        configArgs.append(f"-Dabsl_DIR={depBuilder.installDir}/lib/cmake/absl")
-
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "utf8_range_DIR": f"{self.installDir}/lib/cmake/utf8_range"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("utf8_range")

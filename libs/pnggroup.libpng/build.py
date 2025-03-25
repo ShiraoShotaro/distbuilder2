@@ -11,8 +11,7 @@ class Builder(BuilderBase):
     versions = list(signatures.keys())
 
     # --- options ---
-    option_Shared = Option(bool, True, "Build shared")
-    option_Static = Option(bool, True, "Build static")
+    option_Shared = Option(bool, False, "Build shared")
 
     # --- deps ---
     dep_zlib = Dependency("madler.zlib")
@@ -32,17 +31,14 @@ class Builder(BuilderBase):
             "-DPNG_BUILD_ZLIB=0",
             "-DPNG_DEBUG=0",
             f"-DPNG_SHARED={self.option_Shared}",
-            f"-DPNG_STATIC={self.option_Static}",
+            f"-DPNG_STATIC={not self.option_Shared.value}",
             "-DPNG_TESTS=0",
             "-DPNG_TOOLS=0",
-            f"-DZLIB_ROOT={self.dep_zlib.generateBuilder(self).installDir}",
         ]
 
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "PNG_DIR": f"{self.installDir}/lib/cmake/PNG",
-        }
+    def export(self, toolchain):
+        toolchain.setDir("PNG")

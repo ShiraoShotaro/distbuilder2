@@ -12,16 +12,12 @@ class Builder(BuilderBase):
     versions = list(signatures.keys())
 
     # --- options ---
-    option_Shared = Option(bool, True, "Build shared")
-    option_Static = Option(bool, True, "Build static")
+    option_Shared = Option(bool, False, "Build shared")
     option_CompressionSupport = Option(bool, True, "Compression support")
     option_DecompressionSupport = Option(bool, True, "Decompression support")
     option_BuildGZip = Option(bool, False, "Build GZIP")
     option_GZipSupport = Option(bool, False, "GZIP support")
     option_ZlibSupport = Option(bool, False, "Zlib support")
-
-    # --- deps ---
-    # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
 
     def build(self):
         self.download(
@@ -38,7 +34,7 @@ class Builder(BuilderBase):
             f"-DCMAKE_INSTALL_PREFIX={self.installDir}",  # config 時に直接使っているみたいで, これは必須でした
             f"-DLIBDEFLATE_BUILD_GZIP={self.option_BuildGZip}",
             f"-DLIBDEFLATE_BUILD_SHARED_LIB={self.option_Shared}",
-            f"-DLIBDEFLATE_BUILD_STATIC_LIB={self.option_Static}",
+            f"-DLIBDEFLATE_BUILD_STATIC_LIB={not self.option_Shared.value}",
             "-DLIBDEFLATE_BUILD_TESTS=0",
             f"-DLIBDEFLATE_COMPRESSION_SUPPORT={self.option_CompressionSupport}",
             f"-DLIBDEFLATE_DECOMPRESSION_SUPPORT={self.option_DecompressionSupport}",
@@ -51,7 +47,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "libdeflate_DIR": f"{self.installDir}/lib/cmake/libdeflate"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("libdeflate")

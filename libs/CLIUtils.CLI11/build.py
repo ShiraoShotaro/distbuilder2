@@ -15,9 +15,6 @@ class Builder(BuilderBase):
     option_Sanitizers = Option(bool, False, "Sanitizers")
     option_SingleFile = Option(bool, False, "Single file")
 
-    # --- deps ---
-    # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
-
     def build(self):
         self.download(
             "https://github.com/CLIUtils/CLI11/archive/refs/tags/"
@@ -43,7 +40,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "CLI11_DIR": f"{self.installDir}/share/cmake/CLI11"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("CLI11", "share/cmake/{packageName}")

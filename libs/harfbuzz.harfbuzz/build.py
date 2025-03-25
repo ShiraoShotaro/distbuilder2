@@ -10,12 +10,6 @@ class Builder(BuilderBase):
     recipeVersion = 0
     versions = list(signatures.keys())
 
-    # --- options ---
-    # option_Shared = Option(bool, False, "Build shared")
-
-    # --- deps ---
-    # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
-
     def build(self):
         self.download(
             "https://github.com/harfbuzz/harfbuzz/archive/refs/tags/"
@@ -34,7 +28,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "harfbuzz_DIR": f"{self.installDir}/lib/cmake/harfbuzz"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("harfbuzz")

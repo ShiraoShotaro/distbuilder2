@@ -11,9 +11,6 @@ class Builder(BuilderBase):
     recipeVersion = 0
     versions = list(signatures.keys())
 
-    # --- options ---
-    # option_BuildCompression = Option(bool, True, "Build compression")
-
     def build(self):
         self.download(
             "https://github.com/google/boringssl/archive/refs/tags/"
@@ -32,8 +29,6 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "OPENSSL_ROOT_DIR": self.installDir,
-            "OpenSSL_DIR": f"{self.installDir}/lib/cmake/OpenSSL",
-        }
+    def export(self, toolchain):
+        toolchain.setDir("OpenSSL")
+        toolchain.setDirpathVariable("OPENSSL_ROOT_DIR", self.installDir, "Path to OpenSSL Root")

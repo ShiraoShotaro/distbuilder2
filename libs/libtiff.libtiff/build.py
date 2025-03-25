@@ -46,14 +46,6 @@ class Builder(BuilderBase):
             f"-DBUILD_SHARED_LIBS={self.option_Shared}"
         ]
 
-        if self.dep_zlib.isRequired(self):
-            configArgs.append(f"-DZLIB_ROOT={self.dep_zlib.generateBuilder(self).installDir}")
-        if self.dep_zstd.isRequired(self):
-            configArgs.append(f"-Dzstd_DIR={self.dep_zstd.generateBuilder(self).installDir}/lib/cmake/zstd")
-        if self.dep_libdeflate.isRequired(self):
-            configArgs.append(
-                f"-Dlibdeflate_DIR={self.dep_libdeflate.generateBuilder(self).installDir}/lib/cmake/libdeflate")
-
         # Apply patch
         self.applyPatch(
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}/FindDeflate.cmake.patch",
@@ -66,7 +58,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "Tiff_DIR": f"{self.installDir}/lib/cmake/tiff"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("Tiff", "lib/cmake/tiff")

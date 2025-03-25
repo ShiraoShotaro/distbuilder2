@@ -14,9 +14,6 @@ class Builder(BuilderBase):
     option_Shared = Option(bool, False, "Build shared.")
     option_Static = Option(bool, True, "Build static.")
 
-    # --- deps ---
-    # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
-
     def build(self):
         self.download(
             "https://github.com/c-ares/c-ares/archive/refs/tags/"
@@ -45,7 +42,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "c-ares_DIR": f"{self.installDir}/lib/cmake/c-ares"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("c-ares")

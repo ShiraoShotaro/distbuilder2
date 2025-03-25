@@ -50,6 +50,6 @@ class Option:
 
     def __str__(self) -> str:
         if self._type is bool:
-            return "1" if self._value else "0"
+            return "1" if self.value else "0"
         else:
-            return str(self._value)
+            return str(self.value)

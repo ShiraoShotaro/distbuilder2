@@ -37,14 +37,9 @@ class Builder(BuilderBase):
             f"-DRE2_USE_ICU={self.option_UseICU}",
         ]
 
-        depBuilder = self.dep_abseil.generateBuilder(self)
-        configArgs.append(f"-Dabsl_DIR={depBuilder.installDir}/lib/cmake/absl")
-
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "re2_DIR": f"{self.installDir}/lib/cmake/re2"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("re2")

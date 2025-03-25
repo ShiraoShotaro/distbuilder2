@@ -5,6 +5,7 @@ import subprocess
 import hashlib
 import json
 from typing import List, Union, Optional, Set
+from collections import OrderedDict
 from .errors import BuildError
 from .preference import Preference
 from .toolchain import Toolchain
@@ -128,6 +129,9 @@ class BuilderBase:
         self._hashData: Optional[dict] = None
         self._hash: Option[str] = None
 
+        # CMake toolchain
+        self._toolchain: Optional[Toolchain] = None
+
     def _setDirty(self):
         self._hash = None
         self._hashData = None
@@ -153,7 +157,7 @@ class BuilderBase:
         script = hashlib.sha256(script.encode()).hexdigest()
 
         # -- build json object
-        jobj = dict(
+        jobj = OrderedDict(
             libraryName=self._libraryName,
             scriptSignature=script,
             version=str(self._version),
@@ -162,12 +166,13 @@ class BuilderBase:
         )
 
         for option in self._options:
-            jobj["options"].append(dict(key=option.key, value=str(option)))
+            jobj["options"].append(OrderedDict(key=option.key, value=str(option)))
         for dep in self._dependencies:
             if dep.isRequired(self):
-                jobj["deps"].append(dict(libraryName=dep.libraryName, hash=dep.hash))
+                dep.updateHash()
+                jobj["deps"].append(OrderedDict(libraryName=dep.libraryName, hash=dep.hash))
             else:
-                jobj["deps"].append(dict(libraryName=dep.libraryName, hash=None))
+                jobj["deps"].append(OrderedDict(libraryName=dep.libraryName, hash=None))
         self._hashData = json.dumps(jobj, indent=2, ensure_ascii=False)
 
         # -- calc hash
@@ -208,6 +213,18 @@ class BuilderBase:
                 fp.write(self._hashData)
             with open(os.path.join(self.installDir, "info.json"), mode="w", encoding="utf-8") as fp:
                 fp.write(self._hashData)
+
+            # deps に対して cmake toolchain を作る.
+            self._toolchain = Toolchain(self.globalOptions.config)
+            for dep in self.dependencies:
+                if dep.isRequired(self):
+                    self._toolchain._builder = dep.builder
+                    dep.builder.export(self._toolchain)
+                    self._toolchain._builder = None
+
+            # toolchain を build directory に書き出す
+            with open(os.path.join(self.buildDir, "toolchain.cmake"), mode="w", encoding="utf-8") as fp:
+                fp.write(self._toolchain.dump())
 
     @property
     def libraryName(self) -> str:
@@ -292,9 +309,16 @@ class BuilderBase:
     def export(self, toolchain: Toolchain) -> dict:
         raise RuntimeError("export() must be implemented.")
 
+    def _makeAbspath(self, path: str):
+        if os.path.isabs(path):
+            return path
+        else:
+            return os.path.join(self.buildDir, path)
+
     @_logTask
     def checkSignature(self, path: str, signature: str, *, signatureAlgorithm: str = "sha256"):
         import hashlib
+        path = self._makeAbspath(path)
         with open(path, mode="rb") as fp:
             sig = hashlib.file_digest(fp, signatureAlgorithm).hexdigest().lower()
             signature = signature.lower()
@@ -309,7 +333,7 @@ class BuilderBase:
 
     @_logTask
     def createDirectory(self, path: str, *, recreate: bool = True):
-        path = os.path.join(self.buildDir, path)
+        path = self._makeAbspath(path)
         self.log(f"path = {path}")
         if os.path.exists(path):
             if recreate is False:
@@ -320,7 +344,7 @@ class BuilderBase:
 
     @_logTask
     def remove(self, path: str, *, nonExistOk: bool = True):
-        path = os.path.join(self.buildDir, path)
+        path = self._makeAbspath(path)
         self.log(f"path = {path}")
         if os.path.exists(path):
             if (os.path.isdir(path)):
@@ -345,7 +369,7 @@ class BuilderBase:
         if force:
             self.log("FORCE (re)downloading")
 
-        destinationPath = os.path.join(self.buildDir, destination)
+        destinationPath = self._makeAbspath(destination)
         self.log(f"URL: {url}")
         self.log(f"Destination: {destinationPath}")
 
@@ -383,8 +407,8 @@ class BuilderBase:
 
     @_logTask
     def unzip(self, zipPath: str, destination: str):
-        zipPath = os.path.join(self.buildDir, zipPath)
-        destination = os.path.join(self.buildDir, destination)
+        zipPath = self._makeAbspath(zipPath)
+        destination = self._makeAbspath(destination)
         self.log(f"zip file = {zipPath}")
         self.log(f"Destination = {destination}")
         self.remove(destination)
@@ -437,11 +461,14 @@ class BuilderBase:
         self._cmake(args)
 
     @_logTask
-    def cmakeConfigure(self, srcDir: str, buildDir: str, args: list):
-        srcDir = os.path.join(self.buildDir, srcDir)
-        buildDir = os.path.join(self.buildDir, buildDir)
+    def cmakeConfigure(self, srcDir: str, buildDir: str, args: list, *, withToolchain: bool = True):
+        srcDir = self._makeAbspath(srcDir)
+        buildDir = self._makeAbspath(buildDir)
+        toolchainFile = os.path.join(self.buildDir, "toolchain.cmake")
         self.log(f"Source directory = {srcDir}")
         self.log(f"Build directory = {buildDir}")
+        if withToolchain is True:
+            self.log(f"Toolchain = {toolchainFile}")
         self.remove(buildDir)
 
         generator = Preference.get().generator
@@ -450,19 +477,21 @@ class BuilderBase:
         if generator is not None:
             pargs += ["-G", generator]
         pargs += args
+        if withToolchain is True:
+            pargs.append(f"-DCMAKE_TOOLCHAIN_FILE={toolchainFile}")
         pargs += ["-S", srcDir, "-B", buildDir]
         self._cmake(pargs)
 
     @_logTask
     def cmakeBuild(self, buildDir: str, config: str):
-        buildDir = os.path.join(self.buildDir, buildDir)
+        buildDir = self._makeAbspath(buildDir)
         self.log(f"Build directory = {buildDir}")
         self.log(f"Config = {config}")
         self._cmake(["--build", buildDir, "--config", config])
 
     @_logTask
     def cmakeInstall(self, buildDir: str, config: str, prefix: str = ""):
-        buildDir = os.path.join(self.buildDir, buildDir)
+        buildDir = self._makeAbspath(buildDir)
         installDir = self.installDir
         if prefix:
             installDir = os.path.join(installDir, prefix)
@@ -477,8 +506,8 @@ class BuilderBase:
 
     @_logTask
     def copyFile(self, srcFile: str, destFile: str, *, allowOverwrite=False):
-        srcFile = os.path.join(self.buildDir, srcFile)
-        destFile = os.path.join(self.buildDir, destFile)
+        srcFile = self._makeAbspath(srcFile)
+        destFile = self._makeAbspath(destFile)
         if os.path.exists(destFile):
             if allowOverwrite is True:
                 os.remove(destFile)
@@ -494,7 +523,7 @@ class BuilderBase:
     def applyPatch(self, patchFile: str, root: str):
         import patch_ng
         patchFile = os.path.abspath(patchFile)
-        root = os.path.join(self.buildDir, root)
+        root = self._makeAbspath(root)
         self.log("Patch applying...")
         self.log(f"-- patch file: {patchFile}")
         self.log(f"-- root dir: {root}")

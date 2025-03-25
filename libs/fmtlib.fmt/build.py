@@ -36,7 +36,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "fmt_DIR": f"{self.installDir}/lib/cmake/fmt"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("fmt")

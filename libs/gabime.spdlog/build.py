@@ -44,18 +44,11 @@ class Builder(BuilderBase):
             "-DSPDLOG_MSVC_UTF8=1",
             "-DSPDLOG_FMT_EXTERNAL_HO=0",
             f"-DSPDLOG_USE_STD_FORMAT={not self.option_UseFmt.value}",
-            f"-DSPDLOG_FMT_EXTERNAL={self.option_UseFmt}"
         ]
-
-        if self.dep_fmt.isRequired(self):
-            builder = self.dep_fmt.generateBuilder(self)
-            configArgs.append(f"-Dfmt_DIR={builder.installDir}/lib/cmake/fmt")
 
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "spdlog_DIR": f"{self.installDir}/lib/cmake/spdlog"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("spdlog")

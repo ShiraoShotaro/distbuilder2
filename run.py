@@ -32,11 +32,15 @@ class _DependencyNode:
         self.used = False  # 依存の依存で実際に使われているか
         self.dirty = True  # ステートの更新が必要か
         self.availableVersions = builder.availableVersions
+        self.flatten = False
 
 
-def configure(filepath, globalOpt: distbuilder.GlobalOptions):
-    with open(filepath, mode="r", encoding="utf-8") as fp:
+def configure(depFilepath: str, buildDir: str, globalOpt: distbuilder.GlobalOptions):
+    with open(depFilepath, mode="r", encoding="utf-8") as fp:
         jdict = json.load(fp)
+
+    if not os.path.exists(buildDir):
+        os.makedirs(buildDir)
 
     """
     option が決まると dependencies が決まる.
@@ -60,7 +64,7 @@ def configure(filepath, globalOpt: distbuilder.GlobalOptions):
 
     def _traverse(node: _DependencyNode):
         # 今の options で必要な dependencies を列挙する.
-        if node.dirty is True or True:
+        if node.dirty is True:
             node.dirty = False
             for dep in node.builder.dependencies:
                 if not dep.isRequired(node.builder):
@@ -137,6 +141,7 @@ def configure(filepath, globalOpt: distbuilder.GlobalOptions):
         node.builder.updateHash()
         jj = dict(
             hash=node.builder.hash,
+            hashData=node.builder.hashData,
             options={o.key: (o.value if o.hasValue() else None) for o in node.builder.options},
             dependencies=dict(),
         )
@@ -152,9 +157,63 @@ def configure(filepath, globalOpt: distbuilder.GlobalOptions):
     for node in roots:
         _dump(jobj, node)
 
-    print(json.dumps(jobj, indent=2, ensure_ascii=False))
+    outDependencyTreeDebugPath = os.path.join(buildDir, "dependency_tree_debug.json")
+    with open(outDependencyTreeDebugPath, mode="w", encoding="utf-8") as fp:
+        json.dump(jobj, fp, indent=2, ensure_ascii=False)
+    print(f"[distbuilder] Export debug tree view: {outDependencyTreeDebugPath}")
 
-    # 全て flatten する.
+    # 全て flatten し, ビルド順に並べる.
+    jdeps = list()
+    deps = list()
+
+    def _flatten(node: _DependencyNode):
+        if node.flatten is True:
+            return
+        for dep in node.builder.dependencies:
+            if dep.libraryName in depNodes:
+                _flatten(depNodes[dep.libraryName])
+
+        node.builder.updateHash()
+        conf = dict(
+            libraryName=node.builder.libraryName,
+            version=str(node.builder.version),
+            hash=node.builder.hash,
+            options={o.key: o.value for o in node.builder.options},
+            deps={d.libraryName: d.hash for d in node.builder.dependencies}
+        )
+        jdeps.append(conf)
+        deps.append(node.builder)
+        node.flatten = True
+
+    for lib in roots:
+        _flatten(lib)
+
+    # jdeps を json に書き出す.
+    outDepsFilepath = os.path.join(buildDir, "deps.json")
+    with open(outDepsFilepath, mode="w", encoding="utf-8") as fp:
+        json.dump(jdeps, fp, indent=2, ensure_ascii=False)
+    print(f"[distbuilder] Export deps: {outDepsFilepath}")
+
+    # jdict を補完して書き戻す.
+    for lib, info in jdict.items():
+        depNode = depNodes[lib]
+        info["version"] = str(depNode.builder.version)
+        info["options"] = {o.key: (o.value if o.hasValue() else None) for o in depNode.builder.options}
+
+    with open(depFilepath, mode="w", encoding="utf-8") as fp:
+        json.dump(jdict, fp, indent=4, ensure_ascii=True)
+
+    tc = distbuilder.Toolchain(globalOpt.config)
+    for builder in deps:
+        tc._builder = builder
+        builder.export(tc)
+        tc._builder = None
+
+    outToolchainPath = os.path.join(buildDir, "toolchain.cmake")
+    with open(outToolchainPath, mode="w", encoding="utf-8") as fp:
+        fp.write(tc.dump())
+    print(f"[distbuilder] Export toolchain: {outToolchainPath}")
+
     # TODO: ここから
 
     # 全てを flatten し, ビルド順になった dependencies を出力先(大抵はビルド)に出力する.
@@ -234,7 +293,7 @@ def configure(filepath, globalOpt: distbuilder.GlobalOptions):
 
 
 # TODO: 依存ライブラリに要求するオプションの validation をしないといけない
-def build(filepath, globalOpt: distbuilder.GlobalOptions):
+def build(buildDir: str, globalOpt: distbuilder.GlobalOptions):
     class CwdScope:
         def __init__(self):
             self._cwd = None
@@ -246,50 +305,49 @@ def build(filepath, globalOpt: distbuilder.GlobalOptions):
             if self._cwd is not None:
                 os.chdir(self._cwd)
 
-    toolchain = distbuilder.Toolchain(globalOpt.config)
+    depsFilepath = os.path.join(buildDir, "deps.json")
+    with open(depsFilepath, mode="r", encoding="utf-8") as fp:
+        jdeps = json.load(fp)
 
-    with open(filepath, mode="r", encoding="utf-8") as fp:
-        jdict = json.load(fp)
+    # jdeps は list なので, libraryName をキーにした dict に直す
+    jdict = {j["libraryName"]: j for j in jdeps}
 
-    builtLibs = set()
-    buildLibs = dict()
+    # 一旦先に全ての builder を作る.
+    deps = dict()
+    for lib in jdeps:
+        builderCls, path = distbuilder.searchBuilderAndPath(lib["libraryName"])
+        builder: distbuilder.BuilderBase = builderCls(jdict, globalOpt)
+        deps[builder.libraryName] = builder
 
-    for lib in jdict.keys():
-        builderCls, path = distbuilder.searchBuilderAndPath(lib)
-        # print(builderCls)
-        buildLibs[lib] = (builderCls(jdict, globalOpt), path)
-
-    while len(buildLibs) > 0:
-        builtAny = False
-        for lib, (builder, path) in buildLibs.copy().items():
-            resolved = True
-            for libdep in builder.dependencies:
-                if libdep.isRequired(builder) and libdep.libraryName not in builtLibs:
-                    resolved = False
-                    break
-            if not resolved:
-                continue
-
-            # build
-            if not os.path.exists(builder.installDir) or len(os.listdir(builder.installDir)) == 0:
-                with CwdScope():
-                    os.chdir(os.path.dirname(path))
-                    builder.prepare()
-                    builder.build()
-                    toolchain._builder = builder
-                    builder.export(toolchain)
-                    toolchain._builder = None
+        for dep in builder.dependencies:
+            if dep.isRequired(builder):
+                # かならず依存先のライブラリは deps に居るはず.
+                depBuilder = deps[dep.libraryName]
+                dep._builder = depBuilder
             else:
-                builder.log("Cached. build skip.")
-            del buildLibs[lib]
-            builtLibs.add(lib)
-            builtAny = True
-        if builtAny is False:
-            raise distbuilder.BuildError("Dependency error.")
+                from distbuilder.builder import EmptyBuilder
+                dep._builder = EmptyBuilder(jdict, globalOpt)
+
+        assert builder.isResolved()
+        builder.updateHash()
+        if builder.hash != lib["hash"]:
+            print(builder.libraryName, builder.hash, lib["hash"])
+            print(builder.hashData)
+            raise distbuilder.BuildError("Invalid hash.")
+
+        # info.json, toolchain.cmake が作られてしまうので 2以下
+        if os.path.exists(builder.installDir) is False or len(os.listdir(builder.installDir)) <= 2:
+            with CwdScope():
+                os.chdir(os.path.dirname(path))
+                builder.prepare()
+                builder.build()
+        else:
+            builder.log("Build skip.")
 
 
 def testBuild(args):
     globalOpt = distbuilder.GlobalOptions(
+        createDirectory=True,
         cleanBuild=args.clean,
         forceDownload=args.forceDownload)
     builderCls, path = distbuilder.searchBuilderAndPath(args.libraryName)
@@ -316,9 +374,10 @@ def testBuild(args):
                 builder.libraryName: {"version": str(version), "options": options}
             }, fp)
         # TODO:
-        configure(filepath, distbuilder.GlobalOptions())
-        build(filepath, globalOpt)
-        # break
+        configure(filepath, rootdir, distbuilder.GlobalOptions())
+        print(filepath)
+        build(rootdir, globalOpt)
+        break
 
 
 if __name__ == "__main__":
@@ -328,23 +387,24 @@ if __name__ == "__main__":
     # ビルド要求の py ファイルかなにかを要求する
 
     def _configure(args):
-        configure(args.filepath, distbuilder.GlobalOptions())
+        configure(args.filepath, args.buildDir, distbuilder.GlobalOptions())
 
     def _build(args):
         globalOpt = distbuilder.GlobalOptions(
             cleanBuild=args.clean,
             forceDownload=args.forceDownload,
             createDirectory=True)
-        build(args.filepath, globalOpt)
+        build(args.buildDir, globalOpt)
 
     parser.add_argument("--preference", type=str, help="Path to preference file.", default=None)
     subp = parser.add_subparsers()
     subp_configure = subp.add_parser("configure", help="Configure dependencies")
     subp_configure.add_argument("--config", type=str, choices=["Release", "Debug"], required=True)
+    subp_configure.add_argument("-B", "--buildDir", type=str, help="Path to build directory", required=True)
     subp_configure.add_argument("filepath", type=str, help="Path to deps json")
     subp_configure.set_defaults(handler=_configure)
     subp_build = subp.add_parser("build", help="Build dependencies")
-    subp_build.add_argument("filepath", type=str, help="Path to deps json")
+    subp_build.add_argument("-B", "--buildDir", type=str, required=True, help="Path to build directory.")
     subp_build.add_argument("--config", type=str, choices=["Release", "Debug"], required=True)
     subp_build.add_argument("--clean", action="store_true", help="Clear build cache.")
     subp_build.add_argument("--forceDownload", action="store_true", help="Force (re)download.")

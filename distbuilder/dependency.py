@@ -38,6 +38,13 @@ class Dependency:
         else:
             return None
 
+    @property
+    def builder(self):
+        return self._builder
+
+    def updateHash(self):
+        self._builder.updateHash()
+
     def copy(self):
         dep = Dependency(self._libraryName,
                          condition=self._condition,
@@ -68,33 +75,33 @@ class Dependency:
     def isSuitableVersion(self, version: Version) -> bool:
         return version.match(self._versionVariant, self._versionMajor, self._versionMinor, self._versionPatch)
 
-    def resolve(self, builder):
-        # 条件に合致するライブラリを見つける
-        if not self.isRequired(builder):
-            return
+    # def resolve(self, builder):
+    #     # 条件に合致するライブラリを見つける
+    #     if not self.isRequired(builder):
+    #         return
 
-        builderCls, path = searchBuilderAndPath(self._libraryName)
-        versions = set()
-        for version in builderCls.versions:
-            if version.match(self._versionVariant, self._versionMajor, self._versionMinor, self._versionPatch):
-                versions.add(version)
+    #     builderCls, path = searchBuilderAndPath(self._libraryName)
+    #     versions = set()
+    #     for version in builderCls.versions:
+    #         if version.match(self._versionVariant, self._versionMajor, self._versionMinor, self._versionPatch):
+    #             versions.add(version)
 
-        if not versions:
-            raise BuildError(f"Not found dependency. {self._libraryName} "
-                             f"({self._versionVariant}.{self._versionMajor}.{self._versionMinor}.{self._versionPatch})")
+    #     if not versions:
+    #         raise BuildError(f"Not found dependency. {self._libraryName} "
+    #                          f"({self._versionVariant}.{self._versionMajor}.{self._versionMinor}.{self._versionPatch})")
 
-        # option を override 指定する
-        # 既に指定された option で, 異なる値だった場合は止める
-        for optkey, opt in self._overrideOptions.items():
-            if optkey in builder.options:
-                if builder.options[optkey] != opt:
-                    raise BuildError("Dependency option error.")
+    #     # option を override 指定する
+    #     # 既に指定された option で, 異なる値だった場合は止める
+    #     for optkey, opt in self._overrideOptions.items():
+    #         if optkey in builder.options:
+    #             if builder.options[optkey] != opt:
+    #                 raise BuildError("Dependency option error.")
 
-        return (builderCls, versions, self._overrideOptions)
+    #     return (builderCls, versions, self._overrideOptions)
 
-    def generateBuilder(self, builder):
-        depBuilderCls, availableVersions, _ = self.resolve(builder)
-        requiredVersion = depBuilderCls.generateVersion(builder.depsConfValue[self._libraryName]["version"])
-        if requiredVersion not in availableVersions:
-            raise BuildError("Dependency version error.")
-        return depBuilderCls(requiredVersion, builder.depsConfValue, GlobalOptions())
+    # def generateBuilder(self, builder):
+    #     depBuilderCls, availableVersions, _ = self.resolve(builder)
+    #     requiredVersion = depBuilderCls.generateVersion(builder.depsConfValue[self._libraryName]["version"])
+    #     if requiredVersion not in availableVersions:
+    #         raise BuildError("Dependency version error.")
+    #     return depBuilderCls(requiredVersion, builder.depsConfValue, GlobalOptions())

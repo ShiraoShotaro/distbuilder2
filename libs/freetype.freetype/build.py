@@ -37,20 +37,10 @@ class Builder(BuilderBase):
 
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
+            f"-DFT_REQUIRE_ZLIB={self.option_WithZlib}",
+            f"-DFT_REQUIRE_PNG={self.option_WithPNG}",
+            f"-DFT_REQUIRE_HARFBUZZ={self.option_WithHarfBuzz}",
         ]
-
-        if self.dep_harfbuzz.isRequired(self):
-            configArgs.append("-DFT_REQUIRE_HARFBUZZ=1")
-            configArgs.append(
-                f"-Dharfbuzz_DIR={self.dep_harfbuzz.generateBuilder(self).installDir}/lib/cmake/harfbuzz")
-        if self.dep_png.isRequired(self):
-            configArgs.append("-DFT_REQUIRE_PNG=1")
-            configArgs.append(
-                f"-DPNG_DIR={self.dep_png.generateBuilder(self).installDir}/lib/cmake/PNG")
-        if self.dep_zlib.isRequired(self):
-            configArgs.append("-DFT_REQUIRE_ZLIB=1")
-            configArgs.append(
-                f"-DZLIB_ROOT={self.dep_zlib.generateBuilder(self).installDir}")
 
         # Apply patch
         self.applyPatch(
@@ -61,7 +51,5 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Debug")
         self.cmakeBuildAndInstall("build", "Release")
 
-    def export(self, config: str):
-        return {
-            "freetype_DIR": f"{self.installDir}/lib/cmake/freetype"
-        }
+    def export(self, toolchain):
+        toolchain.setDir("freetype")
