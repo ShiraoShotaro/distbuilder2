@@ -12,7 +12,7 @@ class Builder(BuilderBase):
 
     # --- options ---
     option_Shared = Option(bool, False, "Build shared")
-    option_WithZStd = Option(bool, False, "With Zstd")
+    option_WithZstd = Option(bool, False, "With Zstd")
     option_WithZlib = Option(bool, False, "With zlib")
     option_WithDeflate = Option(bool, False, "With libdeflate")
 
