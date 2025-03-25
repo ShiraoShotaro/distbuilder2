@@ -3,9 +3,11 @@ import shutil
 import re
 import subprocess
 import hashlib
-from typing import List, Union
+import json
+from typing import List, Union, Optional, Set
 from .errors import BuildError
 from .preference import Preference
+from .toolchain import Toolchain
 from .version import Version
 from .option import Option
 from .dependency import Dependency
@@ -33,25 +35,76 @@ def _logTask(func):
     return wrapper
 
 
+class _IOLogBuffer:
+    def __init__(self, stream, isStr, logFn):
+        self._stream = stream
+        self._isStr = isStr
+        self._logFn = logFn
+        self._buffer = list()
+        self._data = bytes()
+
+    def _tryDecode(self):
+        try:
+            return self._data.decode("utf-8").rstrip("\n")
+        except UnicodeDecodeError:
+            try:
+                return self._data.decode("cp932").rstrip("\n")
+            except UnicodeDecodeError:
+                return None
+
+    def read(self):
+        while self._stream.readable():
+            data = self._stream.read(1)
+            if len(data) == 0:
+                break
+            self._data += data
+
+            if self._isStr is True and self._data[-1] == b'\n'[0]:
+                strData = self._tryDecode()
+                if strData is not None:
+                    self._logFn(strData)
+                    self._buffer.append(strData)
+                    self._data = bytes()
+        if self._isStr is True:
+            strData = self._tryDecode()
+            if strData is not None and strData != "":
+                self._logFn(strData)
+                self._buffer.append(strData)
+            self._data = "\n".join(self._buffer)
+
+    def dump(self):
+        return self._data
+
+
 # , version: str, options: dict, globalOptions: dict
 
 
 class BuilderBase:
-    def __init__(self, version: Union[Version, str], depsConfValue: dict, globalOptions: GlobalOptions):
-        self._libraryName = self.__class__.__module__
+    def __init__(self, depsConfValue: dict, globalOptions: GlobalOptions):
+        self._libraryName = self.__class__.__module__.__name__
+        self._builderScriptPath = self.__class__.__module__.__file__
         self._logIndent = 0
 
-        if isinstance(version, Version):
-            self._version = version
-        else:
-            self._version = self.generateVersion(version)
-        self._globalOptions = globalOptions
+        # version
+        # -- 指定されないこともある. その場合はビルド実行できない.
+        self._version: Option[Version] = None
+        if self._libraryName in depsConfValue:
+            version = depsConfValue[self._libraryName].get("version", None)
+            if version is not None:
+                self._version = self.generateVersion(version)
 
-        self._depsConfValue = depsConfValue
+        # Global Options
+        self._globalOptions: GlobalOptions = globalOptions
 
-        optionValues = depsConfValue.get(self._libraryName, dict(options={}))["options"]
+        # deps config value
+        self._depsConfValue: dict = depsConfValue.copy()
 
-        # オプション
+        # この builder に対する option values
+        optionValues = dict()
+        if self._libraryName in depsConfValue:
+            optionValues = depsConfValue[self._libraryName].get("options", dict())
+
+        # option, dependency をピックアップする.
         self._options = list()
         self._dependencies = list()
         for member in dir(self.__class__):
@@ -59,60 +112,90 @@ class BuilderBase:
                 m = getattr(self.__class__, member)
                 if isinstance(m, Option):
                     m._key = member[7:]
-                    opt = m.copy()
-                    if m._key in optionValues:
-                        opt.setValue(optionValues[m._key])
+                    opt = m._instantiate(self, optionValues.get(m._key))
                     setattr(self, member, opt)
                     self._options.append(opt)
             if member.startswith("dep_"):
                 m = getattr(self.__class__, member)
                 if isinstance(m, Dependency):
-                    setattr(self, member, m)
-                    self._dependencies.append(m)
+                    dep = m.copy()
+                    setattr(self, member, dep)
+                    self._dependencies.append(dep)
         self._options.sort(key=lambda v: v.key)
         self._dependencies.sort(key=lambda v: v.libraryName)
 
-        # hash
-        self._hashOk = True
-        hashStr = f"ln={self._libraryName}\n"
-        hashStr += f"v={self._version}\n"
-        hashStr += f"recipe={self.__class__.recipeVersion}\n"
-        for opt in self._options:
-            hashStr += f"o:{opt.key}={opt}\n"
+        # Hash
+        self._hashData: Optional[dict] = None
+        self._hash: Option[str] = None
 
-        # hash dependencies
-        for dep in self._dependencies:
-            if not dep.isRequired(self):
-                hashStr += f"dep:{dep.libraryName}=\n"
+    def _setDirty(self):
+        self._hash = None
+        self._hashData = None
+
+    def updateHash(self, *, force: bool = False):
+        if force is False and self._hash is not None:
+            return
+
+        if self.isResolved() is not True:
+            raise BuildError(f"Cannot calc hash. library ({self._libraryName}) unresolved.")
+
+        # -- calc build.py signature
+        # 空行, コメント行は全てカットする.
+        with open(self._builderScriptPath, mode="r", encoding="utf-8") as fp:
+            scriptLines = fp.readlines()
+
+        script = ""
+        for ln in scriptLines:
+            lnn = ln.strip()
+            if lnn == "" or lnn.startswith("#"):
                 continue
+            script += ln.rstrip() + "\n"
+        script = hashlib.sha256(script.encode()).hexdigest()
 
-            if dep.libraryName not in depsConfValue:
-                # 依存が決定していない
-                self._hashOk = False
-                hashStr += f"dep:{dep.libraryName}=<UNRESOLVED>\n"
+        # -- build json object
+        jobj = dict(
+            libraryName=self._libraryName,
+            scriptSignature=script,
+            version=str(self._version),
+            options=list(),
+            deps=list(),
+        )
+
+        for option in self._options:
+            jobj["options"].append(dict(key=option.key, value=str(option)))
+        for dep in self._dependencies:
+            if dep.isRequired(self):
+                jobj["deps"].append(dict(libraryName=dep.libraryName, hash=dep.hash))
             else:
-                depConf = depsConfValue[dep.libraryName]
-                depBuilderCls, depAvailableVersions, overrideOptions = dep.resolve(self)
-                depReqVersion = depBuilderCls.generateVersion(depConf["version"])
-                if depReqVersion not in depAvailableVersions:
-                    raise BuildError("Version error.")
-                for ovrdOptKey, ovrdOptValue in overrideOptions.items():
-                    if depConf.get(ovrdOptKey, ovrdOptValue) != ovrdOptValue:
-                        raise BuildError("Dependency Option Error")
-                depBuilder = depBuilderCls(depReqVersion, depsConfValue, globalOptions)
-                hashStr += f"dep:{dep.libraryName}={depBuilder.hash}\n"
+                jobj["deps"].append(dict(libraryName=dep.libraryName, hash=None))
+        self._hashData = json.dumps(jobj, indent=2, ensure_ascii=False)
 
-        hashStr = hashStr.strip()
-        self._hash = hashlib.md5(hashStr.encode()).hexdigest()
-        self.log(f"-- Hash (Str): {hashStr}")
-        self.log(f"-- HashOK? {self._hashOk}")
-        if self._hashOk:
-            self.log(f"-- Hash:{self._hash}")
+        # -- calc hash
+        self._hash = hashlib.md5(self._hashData.encode()).hexdigest()
+
+    def setVersion(self, version: Version):
+        self._version = version
+        self._setDirty()
+
+    def isResolved(self) -> bool:
+        if self._hash is not None:
+            return True
+        if self._version is None:
+            self.log("Unresolved. version is None.")
+            return False
+        for dep in self._dependencies:
+            if not dep.isResolved():
+                self.log(f"Unresolved. Dependency (library:{dep.libraryName}) is not resolved.")
+                return False
+        return True
 
     def prepare(self):
+        if self._hash is None:
+            self.updateHash()
+
         # ディレクトリ作る
         if self._globalOptions.createDirectory:
-            if self._globalOptions.cleanBuild:
+            if self._globalOptions.cleanBuild and os.path.exists(self.buildDir):
                 shutil.rmtree(self.buildDir)
             os.makedirs(self.buildDir, exist_ok=True)
 
@@ -120,46 +203,66 @@ class BuilderBase:
                 shutil.rmtree(self.installDir)
             os.makedirs(self.installDir, exist_ok=True)
 
+            # hash str を json で保存する
+            with open(os.path.join(self.buildDir, "info.json"), mode="w", encoding="utf-8") as fp:
+                fp.write(self._hashData)
+            with open(os.path.join(self.installDir, "info.json"), mode="w", encoding="utf-8") as fp:
+                fp.write(self._hashData)
+
     @property
     def libraryName(self) -> str:
+        """ ライブラリ名を取得 """
         return self._libraryName
 
     @property
-    def version(self) -> Version:
+    def version(self) -> Optional[Version]:
+        """ ビルドバージョンを取得. """
         return self._version
 
     @property
+    def availableVersions(cls) -> Set[Version]:
+        return set(cls.versions)
+
+    @property
     def globalOptions(self) -> GlobalOptions:
+        """ GlobalOption を取得. """
         return self._globalOptions
 
-    @property
-    def depsConfValue(self) -> dict:
-        return self._depsConfValue
+    # @property
+    # def depsConfValue(self) -> dict:
+    #     """ コンフィグを取得 """
+    #     # Deprecated.
+    #     raise RuntimeError("DEPRECATED.")
+    #     return self._depsConfValue.copy()
 
     @property
-    def options(self) -> list:
-        return self._options
+    def options(self) -> List[Option]:
+        """ オプションの一覧を取得. """
+        return self._options.copy()
 
     @property
     def dependencies(self) -> List[Dependency]:
-        return self._dependencies
+        """ 依存ライブラリ一覧を取得. """
+        return self._dependencies.copy()
 
     @property
-    def hash(self) -> str:
-        if self._hashOk is False:
-            raise BuildError("Hash is invalid.")
+    def hash(self) -> Optional[str]:
+        """ ハッシュを取得. """
         return self._hash
 
     @property
+    def hashData(self) -> Optional[str]:
+        """ ハッシュ元文字列データを取得. """
+        return self._hashData
+
+    @property
     def buildDir(self) -> str:
-        if self._hashOk is False:
-            raise BuildError("Hash is invalid.")
+        self.updateHash()
         return os.path.join(Preference.get().buildRootDirectory, self.libraryName, self._hash).replace("\\", "/")
 
     @property
     def installDir(self) -> str:
-        if self._hashOk is False:
-            raise BuildError("Hash is invalid.")
+        self.updateHash()
         return os.path.join(Preference.get().installRootDirectory, self.libraryName, self._hash).replace("\\", "/")
 
     @classmethod
@@ -186,7 +289,7 @@ class BuilderBase:
         # TODO:
         print(f"[{self.libraryName}]{prefix}", msg)
 
-    def export(self, config: str) -> dict:
+    def export(self, toolchain: Toolchain) -> dict:
         raise RuntimeError("export() must be implemented.")
 
     @_logTask
@@ -288,14 +391,50 @@ class BuilderBase:
         shutil.unpack_archive(zipPath, destination)
         self.log("Unzipped.")
 
+    def _executeCommand(self, args: list, *,
+                        stdin=None,
+                        stdoutBin: bool = False, stderrBin: Optional[str] = False,
+                        cwd: Optional[str] = None,
+                        env: Optional[dict] = None):
+
+        self.log("Commandline: {}".format(" ".join([(c if " " not in c else f'"{c}"') for c in args])))
+        self.log("Executing...")
+        ret = subprocess.Popen(args,
+                               stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               cwd=cwd, env=env, bufsize=0)
+
+        stdout = _IOLogBuffer(ret.stdout, not stdoutBin, lambda t: self.log(f"stdout>{t}"))
+        stderr = _IOLogBuffer(ret.stderr, not stderrBin, lambda t: self.log(f"stderr>{t}"))
+
+        import threading
+        stdoutTh = threading.Thread(target=lambda: stdout.read())
+        stderrTh = threading.Thread(target=lambda: stderr.read())
+        stdoutTh.start()
+        stderrTh.start()
+        stdoutTh.join()
+        stderrTh.join()
+        return (ret.wait(), stdout.dump(), stderr.dump())
+
     @_logTask
-    def cmake(self, args: list):
+    def executeCommand(self, args: list, *,
+                       stdin=None,
+                       stdoutEncoding: Optional[str] = "utf-8", stderrEncoding: Optional[str] = "utf-8",
+                       cwd: Optional[str] = None,
+                       env: Optional[dict] = None):
+        return self._executeCommand(args, stdin=stdin,
+                                    stdoutEncoding=stdoutEncoding, stderrEncoding=stderrEncoding,
+                                    cwd=cwd, env=env)
+
+    def _cmake(self, args: list):
         args = [Preference.get().cmakePath] + args
         self.log("Execute cmake command.")
-        self.log("> " + " ".join(args))
-        if subprocess.run(args).returncode != 0:
+        if self._executeCommand(args)[0] != 0:
             raise BuildError("Failed to cmake.")
         self.log("cmake OK.")
+
+    @_logTask
+    def cmake(self, args: list):
+        self._cmake(args)
 
     @_logTask
     def cmakeConfigure(self, srcDir: str, buildDir: str, args: list):
@@ -312,14 +451,14 @@ class BuilderBase:
             pargs += ["-G", generator]
         pargs += args
         pargs += ["-S", srcDir, "-B", buildDir]
-        self.cmake(pargs)
+        self._cmake(pargs)
 
     @_logTask
     def cmakeBuild(self, buildDir: str, config: str):
         buildDir = os.path.join(self.buildDir, buildDir)
         self.log(f"Build directory = {buildDir}")
         self.log(f"Config = {config}")
-        self.cmake(["--build", buildDir, "--config", config])
+        self._cmake(["--build", buildDir, "--config", config])
 
     @_logTask
     def cmakeInstall(self, buildDir: str, config: str, prefix: str = ""):
@@ -330,9 +469,8 @@ class BuilderBase:
         self.log(f"Build directory = {buildDir}")
         self.log(f"Install directory = {installDir}")
         self.log(f"Config = {config}")
-        self.cmake(["--install", buildDir, "--config", config, "--prefix", installDir])
+        self._cmake(["--install", buildDir, "--config", config, "--prefix", installDir])
 
-    @_logTask
     def cmakeBuildAndInstall(self, buildDir: str, config: str, installPrefix: str = ""):
         self.cmakeBuild(buildDir, config)
         self.cmakeInstall(buildDir, config, installPrefix)
@@ -366,3 +504,28 @@ class BuilderBase:
         if ret is False:
             raise BuildError("Failed to apply patch.")
         self.log("Patch applied.")
+
+
+class _Dummy:
+    __name__ = "<dummylib>"
+    __file__ = ""
+
+
+class EmptyBuilder(BuilderBase):
+    __module__ = _Dummy
+    versions = list()
+
+    def updateHash(self, *_, **__):
+        raise RuntimeError("program error.")
+
+    def isResolved(self):
+        return True
+
+    def prepare(self):
+        pass
+
+    def build(self):
+        pass
+
+    def export(self, config: str):
+        return dict()

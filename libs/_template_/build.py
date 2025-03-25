@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(V, Mj, Mi, P): SHA256Hash,
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---

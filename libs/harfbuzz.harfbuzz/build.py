@@ -4,33 +4,30 @@ from distbuilder import BuilderBase, Option, Dependency, Version
 class Builder(BuilderBase):
 
     signatures = {
-        Version(0, 3, 1, 0): "2ddfaadf8b660050ff066a03833416bf8500624f014877b80eff16e799f68e81",
+        Version(0, 11, 0, 0): "E17ED95300118C1D8091764692A16061AE03F8554E3D76DA8276FD847D78B517",
     }
 
     recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
-    option_Static = Option(bool, True, "Build static")
-    option_Shared = Option(bool, True, "Build shared")
+    # option_Shared = Option(bool, False, "Build shared")
 
     # --- deps ---
     # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
 
     def build(self):
         self.download(
-            "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/"
+            "https://github.com/harfbuzz/harfbuzz/archive/refs/tags/"
             f"{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
             "src.zip",
             signature=Builder.signatures[self.version])
         self.unzip("src.zip", "src")
 
-        srcPath = f"src/libjpeg-turbo-{self.version.major}.{self.version.minor}.{self.version.patch}"
+        srcPath = f"src/harfbuzz-{self.version.major}.{self.version.minor}.{self.version.patch}"
 
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
-            f"-DENABLE_SHARED={self.option_Shared}",
-            f"-DENABLE_STATIC={self.option_Static}",
         ]
 
         self.cmakeConfigure(srcPath, "build", configArgs)
@@ -39,6 +36,5 @@ class Builder(BuilderBase):
 
     def export(self, config: str):
         return {
-            "libjpeg-turbo_DIR": f"{self.installDir}/lib/cmake/libjpeg-turbo",
-            "JPEG_ROOT": f"{self.installDir}",
+            "harfbuzz_DIR": f"{self.installDir}/lib/cmake/harfbuzz"
         }

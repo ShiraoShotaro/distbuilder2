@@ -3,9 +3,17 @@ from .preference import Preference
 from .errors import BuildError
 
 
+_libraryCache = dict()
+
+
 def searchBuilderAndPath(libraryName):
     import importlib.util
 
+    cached = _libraryCache.get(libraryName, None)
+    if cached is not None:
+        return cached
+
+    print(f"[distbuilder] Find library: {libraryName}")
     filepath = None
     if "." not in libraryName:
         filepaths = list()
@@ -16,7 +24,7 @@ def searchBuilderAndPath(libraryName):
                 if dirname.split(".", 1)[1] == libraryName:
                     p = os.path.join(dirpath, dirname, "build.py")
                     if os.path.exists(p):
-                        print(f"-- Found library script. {p}")
+                        print(f"[distbuilder] -- Found library script. {p}")
                         filepaths.append(p)
         if len(filepaths) == 0:
             raise BuildError(f"Not found {libraryName}")
@@ -27,14 +35,17 @@ def searchBuilderAndPath(libraryName):
         for dirpath in Preference.get().sourceDirectories:
             filepath = os.path.join(dirpath, libraryName, "build.py")
             if os.path.exists(filepath):
-                print(f"Found library script. {filepath}")
+                print(f"[distbuilder] -- Found library script. {filepath}")
                 break
         else:
             raise BuildError(f"Not found {libraryName}")
 
-    libraryName = os.path.basename(os.path.dirname(filepath))
-    print(f"library directory is found. {libraryName}, {filepath}")
-    spec = importlib.util.spec_from_file_location(libraryName, filepath)
+    fullLibraryName = os.path.basename(os.path.dirname(filepath))
+    spec = importlib.util.spec_from_file_location(fullLibraryName, filepath)
     builder = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(builder)
-    return (builder.Builder, filepath)
+    builder.Builder.__module__ = builder
+    ret = (builder.Builder, filepath)
+    _libraryCache[fullLibraryName] = ret
+    _libraryCache[libraryName] = ret
+    return ret

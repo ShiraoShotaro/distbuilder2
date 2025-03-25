@@ -1,0 +1,46 @@
+--- CMakeLists.txt
++++ CMakeLists.txt
+@@ -237 +237 @@
+-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/builds/cmake)
++# list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/builds/cmake)
+@@ -256,3 +256,3 @@
+-    find_package(HarfBuzz ${HARFBUZZ_MIN_VERSION} REQUIRED)
+-  else ()
+-    find_package(HarfBuzz ${HARFBUZZ_MIN_VERSION})
++    find_package(harfbuzz REQUIRED CONFIG)
++  else ()
++    find_package(harfbuzz QUIET CONFIG)
+@@ -264,3 +264,3 @@
+-    find_package(PNG REQUIRED)
+-  else ()
+-    find_package(PNG)
++    find_package(PNG REQUIRED CONFIG)
++  else ()
++    find_package(PNG QUIET CONFIG)
+@@ -276 +276 @@
+-    find_package(ZLIB)
++    find_package(ZLIB QUIET)
+@@ -286,3 +286,3 @@
+-    find_package(BZip2 REQUIRED)
+-  else ()
+-    find_package(BZip2)
++    find_package(BZip2 REQUIRED CONFIG)
++  else ()
++    find_package(BZip2 QUIET CONFIG)
+@@ -295,3 +295,3 @@
+-    find_package(BrotliDec REQUIRED)
+-  else ()
+-    find_package(BrotliDec)
++    find_package(BrotliDec REQUIRED CONFIG)
++  else ()
++    find_package(BrotliDec QUIET CONFIG)
+@@ -352 +352 @@
+-if (HARFBUZZ_FOUND)
++if (harfbuzz_FOUND)
+@@ -546,3 +546,3 @@
+-if (HarfBuzz_FOUND)
+-  target_link_libraries(freetype PRIVATE ${HarfBuzz_LIBRARY})
+-  target_include_directories(freetype PRIVATE ${HarfBuzz_INCLUDE_DIRS})
++if (harfbuzz_FOUND)
++  target_link_libraries(freetype PRIVATE harfbuzz::harfbuzz)
++  # target_include_directories(freetype PRIVATE ${HarfBuzz_INCLUDE_DIRS})

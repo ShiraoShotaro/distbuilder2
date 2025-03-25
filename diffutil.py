@@ -29,7 +29,7 @@ def main():
     with open(os.path.join(args.root, tofile), mode="r", encoding="utf-8") as tf:
         tolines = tf.readlines()
 
-    diff = difflib.unified_diff(fromlines, tolines, tofile, tofile)
+    diff = difflib.unified_diff(fromlines, tolines, tofile, tofile, n=0)
 
     with open(output, mode="w", encoding="utf-8") as fp:
         fp.writelines(diff)

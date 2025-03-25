@@ -20,3 +20,8 @@ class GlobalOptions:
     @property
     def createDirectory(self) -> bool:
         return self._createDirectory
+
+    @property
+    def config(self) -> str:
+        # 廃止予定.
+        return "Release"

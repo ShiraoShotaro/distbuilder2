@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Union, Optional
 from .functions import searchBuilderAndPath
 from .version import Version
 from .errors import BuildError
@@ -13,6 +13,7 @@ class Dependency:
                  versionMinor: str = "*",
                  versionPatch: str = "*",
                  overrideOptions: dict = None):
+        from .builder import BuilderBase
         self._libraryName: str = libraryName
         self._condition: bool = condition
         self._versionVariant: str = versionVariant
@@ -20,10 +21,41 @@ class Dependency:
         self._versionMinor: str = versionMinor
         self._versionPatch: str = versionPatch
         self._overrideOptions: dict = overrideOptions if overrideOptions else dict()
+        self._builder: Optional[BuilderBase] = None
 
     @property
     def libraryName(self) -> str:
         return self._libraryName
+
+    @property
+    def overrideOptions(self) -> dict:
+        return self._overrideOptions.copy()
+
+    @property
+    def hash(self) -> Optional[str]:
+        if self._builder is not None:
+            return self._builder.hash
+        else:
+            return None
+
+    def copy(self):
+        dep = Dependency(self._libraryName,
+                         condition=self._condition,
+                         versionVariant=self._versionVariant,
+                         versionMajor=self._versionMajor,
+                         versionMinor=self._versionMinor,
+                         versionPatch=self._versionPatch,
+                         overrideOptions=self._overrideOptions.copy())
+        dep._builder = self._builder
+        return dep
+
+    def searchBuilderClass(self):
+        return searchBuilderAndPath(self._libraryName)[0]
+
+    def isResolved(self) -> bool:
+        if self._builder is None:
+            return False
+        return self._builder.isResolved()
 
     def isRequired(self, builder) -> bool:
         condition = True
@@ -32,6 +64,9 @@ class Dependency:
         else:
             condition = bool(self._condition)
         return condition
+
+    def isSuitableVersion(self, version: Version) -> bool:
+        return version.match(self._versionVariant, self._versionMajor, self._versionMinor, self._versionPatch)
 
     def resolve(self, builder):
         # 条件に合致するライブラリを見つける

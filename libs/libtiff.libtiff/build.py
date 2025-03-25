@@ -12,9 +12,9 @@ class Builder(BuilderBase):
 
     # --- options ---
     option_Shared = Option(bool, False, "Build shared")
-    option_WithZStd = Option(bool, True, "With Zstd")
-    option_WithZlib = Option(bool, True, "With zlib")
-    option_WithDeflate = Option(bool, True, "With libdeflate")
+    option_WithZStd = Option(bool, False, "With Zstd")
+    option_WithZlib = Option(bool, False, "With zlib")
+    option_WithDeflate = Option(bool, False, "With libdeflate")
 
     # --- deps ---
     dep_zlib = Dependency("madler.zlib", condition=lambda self: self.option_WithZlib.value)
@@ -43,7 +43,7 @@ class Builder(BuilderBase):
             "-Dtiff-tools=0",
             f"-Dzlib={self.option_WithZlib}",
             f"-Dzstd={self.option_WithZStd}",
-            f"-DBUILD_SAHRED_LIBS={self.option_Shared}"
+            f"-DBUILD_SHARED_LIBS={self.option_Shared}"
         ]
 
         if self.dep_zlib.isRequired(self):

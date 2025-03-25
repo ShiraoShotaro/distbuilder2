@@ -3,15 +3,18 @@ from .errors import BuildError
 
 class Option:
     def __init__(self, type, defaultValue, description=None):
+        self._builder = None
         self._key = None
         self._type = type
         self._defaultValue = defaultValue
         self._description = description
-        self._value = defaultValue
+        self._value = None
 
-    def copy(self) -> "Option":
+    def _instantiate(self, builder, value) -> "Option":
         opt = Option(self._type, self._defaultValue, self._description)
         opt._key = self._key
+        opt._builder = builder
+        opt._value = value
         return opt
 
     @property
@@ -33,12 +36,15 @@ class Option:
 
     @property
     def value(self):
-        return self._value
+        return self._value if self._value is not None else self._defaultValue
+
+    def hasValue(self) -> bool:
+        return self._value is not None
 
     def setValue(self, value):
         if isinstance(value, self._type):
-            print(f"UPDATE CONFIG: {self._key}={value}")
             self._value = value
+            self._builder._setDirty()
         else:
             raise BuildError("Invalid option value type.")
 
