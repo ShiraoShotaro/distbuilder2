@@ -8,7 +8,6 @@ class Builder(BuilderBase):
     }
 
     versions = list(signatures.keys())
-    recipeVersion = 0
 
     def build(self):
         self.download(

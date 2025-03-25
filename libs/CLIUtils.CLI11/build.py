@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 2, 5, 0): "887270cae374a0b9e22b39647f9fc4bc742587fb26d6a221da2d2bbcf3109b0b",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---

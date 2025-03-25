@@ -9,7 +9,6 @@ class Builder(BuilderBase):
     }
 
     versions = list(signatures.keys())
-    recipeVersion = 0
 
     option_BuildCompression = Option(bool, True, "Build compression")
     option_BuildDecompression = Option(bool, True, "Build decompression")

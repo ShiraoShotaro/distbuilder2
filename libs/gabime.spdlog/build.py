@@ -9,7 +9,6 @@ class Builder(BuilderBase):
     }
 
     versions = list(signatures.keys())
-    recipeVersion = 0
 
     # --- options ---
     option_Shared = Option(bool, False, "Build shared")

@@ -171,8 +171,7 @@ class BuilderBase:
             if dep.isRequired(self):
                 dep.updateHash()
                 jobj["deps"].append(OrderedDict(libraryName=dep.libraryName, hash=dep.hash))
-            else:
-                jobj["deps"].append(OrderedDict(libraryName=dep.libraryName, hash=None))
+            # else: 使用しない dependency は記述しない.
         self._hashData = json.dumps(jobj, indent=2, ensure_ascii=False)
 
         # -- calc hash
