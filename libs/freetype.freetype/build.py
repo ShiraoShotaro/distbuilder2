@@ -12,13 +12,13 @@ class Builder(BuilderBase):
 
     # --- options ---
     # option_Shared = Option(bool, False, "Build shared")
-    option_WithHarfBuzz = Option(bool, False, "Build with halfbuzz")
+    option_WithHarfbuzz = Option(bool, False, "Build with halfbuzz")
     option_WithPNG = Option(bool, False, "Build with png")
     option_WithZlib = Option(bool, False, "Build with zlib")
 
     # --- deps ---
     dep_harfbuzz = Dependency("harfbuzz.harfbuzz",
-                              condition=lambda self: self.option_WithHarfBuzz.value)
+                              condition=lambda self: self.option_WithHarfbuzz.value)
     dep_png = Dependency("pnggroup.libpng",
                          condition=lambda self: self.option_WithPNG.value)
     dep_zlib = Dependency("madler.zlib",
@@ -39,7 +39,7 @@ class Builder(BuilderBase):
             "-DCMAKE_DEBUG_POSTFIX=d",
             f"-DFT_REQUIRE_ZLIB={self.option_WithZlib}",
             f"-DFT_REQUIRE_PNG={self.option_WithPNG}",
-            f"-DFT_REQUIRE_HARFBUZZ={self.option_WithHarfBuzz}",
+            f"-DFT_REQUIRE_HARFBUZZ={self.option_WithHarfbuzz}",
         ]
 
         # Apply patch
