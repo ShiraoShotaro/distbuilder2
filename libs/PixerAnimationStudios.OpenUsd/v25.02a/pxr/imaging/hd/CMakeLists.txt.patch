@@ -1,0 +1,10 @@
+--- pxr/imaging/hd/CMakeLists.txt
++++ pxr/imaging/hd/CMakeLists.txt
+@@ -18,4 +18,3 @@
+-        ${TBB_tbb_LIBRARY}
+-
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++        TBB::tbb
++
++

@@ -13,11 +13,10 @@ class Builder(BuilderBase):
     dep_abseil = Dependency("abseil.abseil-cpp")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/protocolbuffers/utf8_range/archive/1d1ea7e3fedf482d4a12b473c1ed25fe0f371a45.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = "src/utf8_range-1d1ea7e3fedf482d4a12b473c1ed25fe0f371a45"
 

@@ -15,12 +15,11 @@ class Builder(BuilderBase):
     option_SingleFile = Option(bool, False, "Single file")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/CLIUtils/CLI11/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/CLI11-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

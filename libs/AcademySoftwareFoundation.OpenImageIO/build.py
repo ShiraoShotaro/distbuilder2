@@ -22,12 +22,11 @@ class Builder(BuilderBase):
     dep_libtiff = Dependency("libtiff.libtiff")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/refs/tags/"
             f"v{self.version.variant}.{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = ("src/OpenImageIO-"
                    f"{self.version.variant}.{self.version.major}.{self.version.minor}.{self.version.patch}")

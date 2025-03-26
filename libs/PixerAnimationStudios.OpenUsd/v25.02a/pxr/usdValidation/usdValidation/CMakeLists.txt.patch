@@ -1,0 +1,9 @@
+--- pxr/usdValidation/usdValidation/CMakeLists.txt
++++ pxr/usdValidation/usdValidation/CMakeLists.txt
+@@ -12 +12 @@
+-        ${TBB_tbb_LIBRARY}
++        TBB::tbb
+@@ -14,2 +14 @@
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++

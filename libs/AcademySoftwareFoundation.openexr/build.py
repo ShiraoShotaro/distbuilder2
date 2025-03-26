@@ -19,12 +19,11 @@ class Builder(BuilderBase):
     dep_Imath = Dependency("AcademySoftwareFoundation.Imath")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/openexr-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

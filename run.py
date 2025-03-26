@@ -214,97 +214,9 @@ def configure(depFilepath: str, buildDir: str, globalOpt: distbuilder.GlobalOpti
         fp.write(tc.dump())
     print(f"[distbuilder] Export toolchain: {outToolchainPath}")
 
-    # TODO: ここから
-
-    # 全てを flatten し, ビルド順になった dependencies を出力先(大抵はビルド)に出力する.
-    # -> これを build では読む.
-    # jdict は更新して filepath に書き戻す.
-    # cmake toolchain を出力先（大抵はビルド）書き出す.
-    return
-
-    if "options" not in info:
-        info["options"] = dict()
-    options = info["options"]
-    builder = builderCls(jdict, distbuilder.GlobalOptions())
-    for opt in builder.options:
-        options[opt.key] = opt.value
-    for libdep in builder.dependencies:
-        if not libdep.isRequired(builder):
-            continue
-        depBuilderCls, versions, overrideOptions = libdep.resolve(builder)
-        if libdep.libraryName not in deps:
-            deps[libdep.libraryName] = (depBuilderCls, versions, overrideOptions)
-        else:
-            deps[libdep.libraryName][1].intersection_update(versions)
-
-    # 依存の依存を探す
-    resolved = False
-    while not resolved:
-        resolved = True
-        for deplib, (depBuilderCls, availableVersions, _) in deps.copy().items():
-            depBuilder = depBuilderCls(sorted(availableVersions)[-1], jdict, distbuilder.GlobalOptions())
-            for libdep in depBuilder.dependencies:
-                if not libdep.isRequired(depBuilder):
-                    continue
-                depBuilderCls, versions, overrideOptions = libdep.resolve(builder)
-                if libdep.libraryName not in deps:
-                    deps[libdep.libraryName] = (depBuilderCls, versions, overrideOptions)
-                    resolved = False
-                else:
-                    deps[libdep.libraryName][1].intersection_update(versions)
-
-    # deps から version の固定
-    for libdep, (depBuilderCls, versions, overrideOptions) in deps.items():
-        if libdep in jdict:
-            # 依存しているライブラリが既に指定されている
-            # バージョンが合致するか調べる
-            version = depBuilderCls.generateVersion(jdict[libdep]["version"])
-            if version not in versions:
-                # version 合致しない
-                raise distbuilder.BuildError(
-                    f"Dependency {libdep} version ({version}) is not suitable. (Requires: {versions})")
-        elif len(versions) != 0:
-            # 一番新しいバージョンを依存に追加する
-            print(f"{libdep} available versions: {[str(v) for v in versions]}")
-            version = sorted(list(versions), reverse=True)[0]
-            depBuilder = depBuilderCls(version, {}, distbuilder.GlobalOptions())
-            jdict[libdep] = {
-                "version": str(version),
-                "options": {opt.key: opt.value for opt in depBuilder.options}
-            }
-        else:
-            raise distbuilder.BuildError("No library version is available.")
-        # オプション上書き
-        jdict[libdep]["options"].update(overrideOptions)
-
-    # dep 含めた状態で exports を決定
-    exports = dict()
-    for dep, info in jdict.items():
-        builderCls, path = distbuilder.searchBuilderAndPath(dep)
-        builder = builderCls(jdict, distbuilder.GlobalOptions())
-        exports.update(builder.export(args.config))
-
-    with open(args.filepath, mode="w", encoding="utf-8") as fp:
-        json.dump(jdict, fp, ensure_ascii=False, indent=4)
-
-    # cmake file 書き出し
-    with open(f"{os.path.splitext(args.filepath)[0]}.cmake", mode="w", encoding="utf-8") as fp:
-        fp.writelines([f"set({k} {v})\n" for k, v in exports.items()])
-
 
 # TODO: 依存ライブラリに要求するオプションの validation をしないといけない
 def build(buildDir: str, globalOpt: distbuilder.GlobalOptions):
-    class CwdScope:
-        def __init__(self):
-            self._cwd = None
-
-        def __enter__(self, *_):
-            self._cwd = os.getcwd()
-
-        def __exit__(self, *_):
-            if self._cwd is not None:
-                os.chdir(self._cwd)
-
     depsFilepath = os.path.join(buildDir, "deps.json")
     with open(depsFilepath, mode="r", encoding="utf-8") as fp:
         jdeps = json.load(fp)
@@ -337,19 +249,22 @@ def build(buildDir: str, globalOpt: distbuilder.GlobalOptions):
 
         # info.json, toolchain.cmake が作られてしまうので 2以下
         if os.path.exists(builder.installDir) is False or len(os.listdir(builder.installDir)) <= 2:
-            with CwdScope():
-                os.chdir(os.path.dirname(path))
-                builder.prepare()
-                builder.build()
+            builder._executeBuildSequence()
         else:
             builder.log("Build skip.")
 
 
 def testBuild(args):
-    globalOpt = distbuilder.GlobalOptions(
+    configureGlobalOpt = distbuilder.GlobalOptions(
+        ignoreScriptVersion=args.ignoreScriptVersion)
+    buildGlobalOpt = distbuilder.GlobalOptions(
         createDirectory=True,
-        cleanBuild=args.clean,
-        forceDownload=args.forceDownload)
+        cleanBuild=args.cleanAll,
+        forceDownload=args.forceDownload,
+        unzipAndOverwrite=not args.no_unzipOverwrite,
+        ignoreScriptVersion=args.ignoreScriptVersion,
+        configs=args.config)
+
     builderCls, path = distbuilder.searchBuilderAndPath(args.libraryName)
     versions = builderCls.versions
 
@@ -366,18 +281,17 @@ def testBuild(args):
     rootdir = os.path.join(distbuilder.Preference.get().buildRootDirectory, "testbuild")
     os.makedirs(rootdir, exist_ok=True)
     for version in versions:
+        libraryName_tmp = builderCls.__module__.__name__
         # TODO: options
-        builder = builderCls({"zlib": {"version": version}}, globalOpt)
+        builder = builderCls({libraryName_tmp: {"version": version}}, distbuilder.GlobalOptions())
         filepath = os.path.join(rootdir, f"testbuild.{builder.libraryName}.{version}.json")
         with open(filepath, mode="w", encoding="utf-8") as fp:
             json.dump({
                 builder.libraryName: {"version": str(version), "options": options}
             }, fp)
         # TODO:
-        configure(filepath, rootdir, distbuilder.GlobalOptions())
-        print(filepath)
-        build(rootdir, globalOpt)
-        break
+        configure(filepath, rootdir, configureGlobalOpt)
+        build(rootdir, buildGlobalOpt)
 
 
 if __name__ == "__main__":
@@ -391,30 +305,34 @@ if __name__ == "__main__":
 
     def _build(args):
         globalOpt = distbuilder.GlobalOptions(
-            cleanBuild=args.clean,
+            cleanBuild=args.cleanAll,
             forceDownload=args.forceDownload,
-            createDirectory=True)
+            createDirectory=True,
+            unzipAndOverwrite=not args.no_unzipOverwrite,
+            configs=args.config)
         build(args.buildDir, globalOpt)
 
     parser.add_argument("--preference", type=str, help="Path to preference file.", default=None)
     subp = parser.add_subparsers()
     subp_configure = subp.add_parser("configure", help="Configure dependencies")
-    subp_configure.add_argument("--config", type=str, choices=["Release", "Debug"], required=True)
     subp_configure.add_argument("-B", "--buildDir", type=str, help="Path to build directory", required=True)
     subp_configure.add_argument("filepath", type=str, help="Path to deps json")
     subp_configure.set_defaults(handler=_configure)
     subp_build = subp.add_parser("build", help="Build dependencies")
     subp_build.add_argument("-B", "--buildDir", type=str, required=True, help="Path to build directory.")
-    subp_build.add_argument("--config", type=str, choices=["Release", "Debug"], required=True)
-    subp_build.add_argument("--clean", action="store_true", help="Clear build cache.")
+    subp_build.add_argument("--cleanAll", action="store_true", help="Clear build cache (including all dependencies).")
     subp_build.add_argument("--forceDownload", action="store_true", help="Force (re)download.")
+    subp_build.add_argument("--no-unzipOverwrite", action="store_true", default=False, help="NO unzip overwrite.")
+    subp_build.add_argument("--config", nargs="+", type=str, choices=["Release", "Debug"], default=("Debug", "Release"))
     subp_build.set_defaults(handler=_build)
     subp_test = subp.add_parser("test", help="Building test.")
     subp_test.add_argument("libraryName", type=str)
-    subp_test.add_argument("--clean", action="store_true", help="Clear build cache.")
+    subp_test.add_argument("--cleanAll", action="store_true", help="Clear build cache (including all dependencies).")
     subp_test.add_argument("--forceDownload", action="store_true", help="Force (re)download.")
-    subp_test.add_argument("--config", type=str, choices=["Release", "Debug"], required=True)
     subp_test.add_argument("-o", "--option", nargs="+", type=str, default=list())
+    subp_test.add_argument("--no-unzipOverwrite", action="store_true", default=False, help="NO unzip overwrite.")
+    subp_test.add_argument("--ignoreScriptVersion", action="store_true", default=False, help="Ignore script version")
+    subp_test.add_argument("--config", nargs="+", type=str, choices=["Release", "Debug"], default=("Debug", "Release"))
     subp_test.set_defaults(handler=testBuild)
 
     args = parser.parse_args()

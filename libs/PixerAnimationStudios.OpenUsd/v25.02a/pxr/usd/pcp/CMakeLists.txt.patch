@@ -1,0 +1,10 @@
+--- pxr/usd/pcp/CMakeLists.txt
++++ pxr/usd/pcp/CMakeLists.txt
+@@ -12,4 +12,3 @@
+-        ${TBB_tbb_LIBRARY}
+-
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++        TBB::tbb
++
++

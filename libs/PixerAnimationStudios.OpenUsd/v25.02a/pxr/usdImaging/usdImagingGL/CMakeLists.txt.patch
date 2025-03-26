@@ -1,0 +1,10 @@
+--- pxr/usdImaging/usdImagingGL/CMakeLists.txt
++++ pxr/usdImaging/usdImagingGL/CMakeLists.txt
+@@ -34,4 +34,3 @@
+-        ${TBB_tbb_LIBRARY}
+-
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++        TBB::tbb
++
++

@@ -19,12 +19,11 @@ class Builder(BuilderBase):
     option_ZlibSupport = Option(bool, False, "Zlib support")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/ebiggers/libdeflate/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/libdeflate-{self.version.major}.{self.version.minor}"
 

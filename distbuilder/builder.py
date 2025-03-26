@@ -1,3 +1,4 @@
+import glob
 import os
 import shutil
 import re
@@ -92,7 +93,10 @@ class BuilderBase:
         if self._libraryName in depsConfValue:
             version = depsConfValue[self._libraryName].get("version", None)
             if version is not None:
-                self._version = self.generateVersion(version)
+                if isinstance(version, Version):
+                    self._version = version
+                else:
+                    self._version = self.generateVersion(version)
 
         # Global Options
         self._globalOptions: GlobalOptions = globalOptions
@@ -132,6 +136,9 @@ class BuilderBase:
         # CMake toolchain
         self._toolchain: Optional[Toolchain] = None
 
+        # File Handle
+        self._fp = None
+
     def _setDirty(self):
         self._hash = None
         self._hashData = None
@@ -145,16 +152,19 @@ class BuilderBase:
 
         # -- calc build.py signature
         # 空行, コメント行は全てカットする.
-        with open(self._builderScriptPath, mode="r", encoding="utf-8") as fp:
-            scriptLines = fp.readlines()
-
         script = ""
-        for ln in scriptLines:
-            lnn = ln.strip()
-            if lnn == "" or lnn.startswith("#"):
-                continue
-            script += ln.rstrip() + "\n"
-        script = hashlib.sha256(script.encode()).hexdigest()
+        if not self._globalOptions.ignoreScriptVersion:
+            with open(self._builderScriptPath, mode="r", encoding="utf-8") as fp:
+                scriptLines = fp.readlines()
+
+            for ln in scriptLines:
+                lnn = ln.strip()
+                if lnn == "" or lnn.startswith("#"):
+                    continue
+                script += ln.rstrip() + "\n"
+            script = hashlib.sha256(script.encode()).hexdigest()
+        else:
+            self.log("!!!! Script version is IGNORED !!!!")
 
         # -- build json object
         jobj = OrderedDict(
@@ -220,10 +230,12 @@ class BuilderBase:
                     self._toolchain._builder = dep.builder
                     dep.builder.export(self._toolchain)
                     self._toolchain._builder = None
+            self.exportToolchainForBuild()
 
-            # toolchain を build directory に書き出す
-            with open(os.path.join(self.buildDir, "toolchain.cmake"), mode="w", encoding="utf-8") as fp:
-                fp.write(self._toolchain.dump())
+    def exportToolchainForBuild(self):
+        # toolchain を build directory に書き出す
+        with open(os.path.join(self.buildDir, "toolchain.cmake"), mode="w", encoding="utf-8") as fp:
+            fp.write(self._toolchain.dump())
 
     @property
     def libraryName(self) -> str:
@@ -302,11 +314,38 @@ class BuilderBase:
     def log(self, msg):
         prefix = " --" * self._logIndent
 
-        # TODO:
         print(f"[{self.libraryName}]{prefix}", msg)
 
+        if self._fp is not None:
+            print(f"{prefix}", msg, file=self._fp)
+
+    def _executeBuildSequence(self):
+        class BuildScope:
+            def __init__(self, builder):
+                self._cwd = None
+                self._builder = builder
+
+            def __enter__(self, *_):
+                self._cwd = os.getcwd()
+                os.chdir(os.path.dirname(self._builder._builderScriptPath))
+
+            def __exit__(self, *_):
+                if self._cwd is not None:
+                    os.chdir(self._cwd)
+                if self._builder._fp is not None:
+                    self._builder._fp = None
+
+        with BuildScope(self):
+            self.prepare()
+            with open(os.path.join(self.buildDir, "build.log"), mode="w", encoding="utf-8") as fp:
+                self._fp = fp
+                self.build()
+
+    def build(self):
+        raise RuntimeError("build() must be implemented and do not call super class build().")
+
     def export(self, toolchain: Toolchain) -> dict:
-        raise RuntimeError("export() must be implemented.")
+        raise RuntimeError("export() must be implemented and do not call super class export().")
 
     def _makeAbspath(self, path: str):
         if os.path.isabs(path):
@@ -360,49 +399,10 @@ class BuilderBase:
             self.log(f"Not existing. {path}")
 
     @_logTask
-    def download(self, url: str, destination: str, *, signature: str = None, signatureAlgorithm: str = "sha256"):
-        import urllib.error
-        import urllib.request
-
-        force = self._globalOptions.forceDownload
-        if force:
-            self.log("FORCE (re)downloading")
-
-        destinationPath = self._makeAbspath(destination)
-        self.log(f"URL: {url}")
-        self.log(f"Destination: {destinationPath}")
-
-        exists = os.path.exists(destinationPath)
-        self.log(f"Existing? {exists}")
-
-        if exists and force:
-            self.log("Erase file.")
-            os.remove(destinationPath)
-            exists = False
-
-        if exists and signature is not None:
-            # signature チェック
-            self.checkSignature(destinationPath, signature,
-                                signatureAlgorithm=signatureAlgorithm)
-
-        if exists:
-            # キャッシュ済み
-            self.log("Cached file is available. Skip downloading.")
-            return
-
-        self.log("Downloading...")
-        try:
-            urllib.request.urlretrieve(url, destinationPath)
-        except urllib.error.HTTPError as e:
-            raise BuildError(f"Failed to download source. {e}")
-
-        if signature is not None:
-            self.checkSignature(destinationPath, signature,
-                                signatureAlgorithm=signatureAlgorithm)
-
-        self.log("Downloaded.")
-
-        return destinationPath
+    def download(self, url: str, signature: str, *, ext: str = None) -> str:
+        from .blob import Blob
+        blob = Blob(self)
+        return blob.fetch(url, signature, ext=ext)
 
     @_logTask
     def unzip(self, zipPath: str, destination: str):
@@ -410,15 +410,22 @@ class BuilderBase:
         destination = self._makeAbspath(destination)
         self.log(f"zip file = {zipPath}")
         self.log(f"Destination = {destination}")
-        self.remove(destination)
-        shutil.unpack_archive(zipPath, destination)
-        self.log("Unzipped.")
+        exists = os.path.exists(destination)
+        if exists and self._globalOptions.unzipAndOverwrite:
+            self.remove(destination)
+            exists = False
+        if exists is False:
+            shutil.unpack_archive(zipPath, destination)
+            self.log("Unzipped.")
+        else:
+            self.log("!!! Destination path is already exist, Skip unzip. (no_unzipOverwrite) !!!")
 
     def _executeCommand(self, args: list, *,
                         stdin=None,
                         stdoutBin: bool = False, stderrBin: Optional[str] = False,
                         cwd: Optional[str] = None,
-                        env: Optional[dict] = None):
+                        env: Optional[dict] = None,
+                        label: str = ""):
 
         self.log("Commandline: {}".format(" ".join([(c if " " not in c else f'"{c}"') for c in args])))
         self.log("Executing...")
@@ -426,8 +433,10 @@ class BuilderBase:
                                stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                cwd=cwd, env=env, bufsize=0)
 
-        stdout = _IOLogBuffer(ret.stdout, not stdoutBin, lambda t: self.log(f"stdout>{t}"))
-        stderr = _IOLogBuffer(ret.stderr, not stderrBin, lambda t: self.log(f"stderr>{t}"))
+        if label != "":
+            label = f":{label}"
+        stdout = _IOLogBuffer(ret.stdout, not stdoutBin, lambda t: self.log(f"stdout{label}>{t}"))
+        stderr = _IOLogBuffer(ret.stderr, not stderrBin, lambda t: self.log(f"stderr{label}>{t}"))
 
         import threading
         stdoutTh = threading.Thread(target=lambda: stdout.read())
@@ -443,21 +452,24 @@ class BuilderBase:
                        stdin=None,
                        stdoutEncoding: Optional[str] = "utf-8", stderrEncoding: Optional[str] = "utf-8",
                        cwd: Optional[str] = None,
-                       env: Optional[dict] = None):
+                       env: Optional[dict] = None,
+                       label: str = ""):
         return self._executeCommand(args, stdin=stdin,
                                     stdoutEncoding=stdoutEncoding, stderrEncoding=stderrEncoding,
-                                    cwd=cwd, env=env)
+                                    cwd=cwd, env=env, label=label)
 
-    def _cmake(self, args: list):
+    def _cmake(self, args: list, *, label: str = ""):
+        if label != "":
+            label = f"cmake:{label}"
         args = [Preference.get().cmakePath] + args
         self.log("Execute cmake command.")
-        if self._executeCommand(args)[0] != 0:
+        if self._executeCommand(args, label=label)[0] != 0:
             raise BuildError("Failed to cmake.")
         self.log("cmake OK.")
 
     @_logTask
-    def cmake(self, args: list):
-        self._cmake(args)
+    def cmake(self, args: list, *, label: str = ""):
+        self._cmake(args, label=label)
 
     @_logTask
     def cmakeConfigure(self, srcDir: str, buildDir: str, args: list, *, withToolchain: bool = True):
@@ -479,25 +491,28 @@ class BuilderBase:
         if withToolchain is True:
             pargs.append(f"-DCMAKE_TOOLCHAIN_FILE={toolchainFile}")
         pargs += ["-S", srcDir, "-B", buildDir]
-        self._cmake(pargs)
+        self._cmake(pargs, label="configure")
 
     @_logTask
     def cmakeBuild(self, buildDir: str, config: str):
-        buildDir = self._makeAbspath(buildDir)
-        self.log(f"Build directory = {buildDir}")
-        self.log(f"Config = {config}")
-        self._cmake(["--build", buildDir, "--config", config])
+        if config in self._globalOptions.configs:
+            buildDir = self._makeAbspath(buildDir)
+            self.log(f"Build directory = {buildDir}")
+            self.log(f"Config = {config}")
+            self._cmake(["--build", buildDir, "--config", config], label=f"build[{config}]")
 
     @_logTask
     def cmakeInstall(self, buildDir: str, config: str, prefix: str = ""):
-        buildDir = self._makeAbspath(buildDir)
-        installDir = self.installDir
-        if prefix:
-            installDir = os.path.join(installDir, prefix)
-        self.log(f"Build directory = {buildDir}")
-        self.log(f"Install directory = {installDir}")
-        self.log(f"Config = {config}")
-        self._cmake(["--install", buildDir, "--config", config, "--prefix", installDir])
+        if config in self._globalOptions.configs:
+            buildDir = self._makeAbspath(buildDir)
+            installDir = self.installDir
+            if prefix:
+                installDir = os.path.join(installDir, prefix)
+            self.log(f"Build directory = {buildDir}")
+            self.log(f"Install directory = {installDir}")
+            self.log(f"Config = {config}")
+            self._cmake(["--install", buildDir, "--config", config, "--prefix", installDir],
+                        label=f"install[{config}]")
 
     def cmakeBuildAndInstall(self, buildDir: str, config: str, installPrefix: str = ""):
         self.cmakeBuild(buildDir, config)
@@ -532,6 +547,14 @@ class BuilderBase:
         if ret is False:
             raise BuildError("Failed to apply patch.")
         self.log("Patch applied.")
+
+    @_logTask
+    def applyPatches(self, patchRoot: str, targetRoot: str):
+        patchRoot = os.path.abspath(patchRoot)
+        patchFiles = glob.glob(f"{patchRoot}/**/*.patch", recursive=True)
+        self.log(f"{len(patchFiles)} files to patch.")
+        for patchFile in patchFiles:
+            self.applyPatch(patchFile, targetRoot)
 
 
 class _Dummy:

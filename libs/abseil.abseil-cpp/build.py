@@ -16,12 +16,11 @@ class Builder(BuilderBase):
     # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/abseil/abseil-cpp/archive/refs/tags/"
             f"{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/abseil-cpp-{self.version.minor}.{self.version.patch}"
 

@@ -18,12 +18,11 @@ class Builder(BuilderBase):
     dep_abseil = Dependency("abseil.abseil-cpp")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/google/re2/archive/refs/tags/"
             f"{self.version.major}-{self.version.minor:02d}-{self.version.patch:02d}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/re2-{self.version.major}-{self.version.minor:02d}-{self.version.patch:02d}"
 

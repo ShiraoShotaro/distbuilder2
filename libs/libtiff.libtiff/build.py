@@ -23,13 +23,12 @@ class Builder(BuilderBase):
                                 overrideOptions={"ZlibSupport": True})
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://gitlab.com/libtiff/libtiff/-/archive/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}/"
             f"libtiff-v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/libtiff-v{self.version.major}.{self.version.minor}.{self.version.patch}"
 

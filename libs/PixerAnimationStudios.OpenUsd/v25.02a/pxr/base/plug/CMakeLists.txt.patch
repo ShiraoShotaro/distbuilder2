@@ -1,0 +1,9 @@
+--- pxr/base/plug/CMakeLists.txt
++++ pxr/base/plug/CMakeLists.txt
+@@ -11 +11 @@
+-        ${TBB_tbb_LIBRARY}
++        TBB::tbb
+@@ -13,2 +13 @@
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++

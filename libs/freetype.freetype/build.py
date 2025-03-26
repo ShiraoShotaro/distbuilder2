@@ -24,13 +24,12 @@ class Builder(BuilderBase):
                           condition=lambda self: self.option_WithZlib.value)
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://gitlab.freedesktop.org/freetype/freetype/-/archive/"
             f"VER-{self.version.major}-{self.version.minor}-{self.version.patch}/"
             f"freetype-VER-{self.version.major}-{self.version.minor}-{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/freetype-VER-{self.version.major}-{self.version.minor}-{self.version.patch}"
 

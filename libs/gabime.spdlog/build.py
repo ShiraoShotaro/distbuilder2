@@ -19,12 +19,11 @@ class Builder(BuilderBase):
     dep_fmt = Dependency("fmtlib.fmt", condition=lambda self: self.option_UseFmt.value)
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/gabime/spdlog/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/spdlog-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

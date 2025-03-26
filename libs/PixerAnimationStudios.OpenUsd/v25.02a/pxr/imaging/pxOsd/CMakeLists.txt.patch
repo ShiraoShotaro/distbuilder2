@@ -1,0 +1,9 @@
+--- pxr/imaging/pxOsd/CMakeLists.txt
++++ pxr/imaging/pxOsd/CMakeLists.txt
+@@ -9 +9 @@
+-        ${OPENSUBDIV_OSDCPU_LIBRARY}
++        OpenSubdiv::osdCPU_static
+@@ -11,2 +11 @@
+-    INCLUDE_DIRS
+-        ${OPENSUBDIV_INCLUDE_DIR}
++

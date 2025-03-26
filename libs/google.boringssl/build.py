@@ -11,12 +11,11 @@ class Builder(BuilderBase):
     versions = list(signatures.keys())
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/google/boringssl/archive/refs/tags/"
             f"{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/boringssl-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

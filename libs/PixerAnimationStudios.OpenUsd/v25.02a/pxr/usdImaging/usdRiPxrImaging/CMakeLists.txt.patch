@@ -1,0 +1,9 @@
+--- pxr/usdImaging/usdRiPxrImaging/CMakeLists.txt
++++ pxr/usdImaging/usdRiPxrImaging/CMakeLists.txt
+@@ -22 +22 @@
+-        ${TBB_tbb_LIBRARY}
++        TBB::tbb
+@@ -24,2 +24 @@
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++

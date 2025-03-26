@@ -20,11 +20,10 @@ class Builder(BuilderBase):
         else:
             versionName = f"{self.version.major}.{self.version.minor}"
 
-        self.download(
+        zipFile = self.download(
             f"https://github.com/glfw/glfw/archive/refs/tags/{versionName}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/glfw-{versionName}"
 
@@ -44,4 +43,4 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Release")
 
     def export(self, toolchain):
-        toolchain.setDir("glfw")
+        toolchain.setDir("glfw3")

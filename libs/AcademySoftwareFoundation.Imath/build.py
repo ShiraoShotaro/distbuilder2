@@ -13,12 +13,11 @@ class Builder(BuilderBase):
     option_Shared = Option(bool, False, "Build shared")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/AcademySoftwareFoundation/Imath/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/Imath-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

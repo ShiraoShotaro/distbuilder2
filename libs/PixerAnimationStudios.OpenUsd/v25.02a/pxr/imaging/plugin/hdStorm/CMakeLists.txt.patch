@@ -1,0 +1,11 @@
+--- pxr/imaging/plugin/hdStorm/CMakeLists.txt
++++ pxr/imaging/plugin/hdStorm/CMakeLists.txt
+@@ -29 +29 @@
+-        ${TBB_tbb_LIBRARY}
++        TBB::tbb
+@@ -31,3 +31,2 @@
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
+-        ${OPENSUBDIV_INCLUDE_DIR}
++
++

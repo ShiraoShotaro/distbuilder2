@@ -23,10 +23,10 @@ class Builder(BuilderBase):
 
     def build(self):
         # TODO: patch, rc対応してない
-        self.download("https://github.com/protocolbuffers/protobuf/archive/refs/tags/"
-                      f"v{self.version.major}.{self.version.minor}.zip",
-                      "src.zip", signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+        zipFile = self.download("https://github.com/protocolbuffers/protobuf/archive/refs/tags/"
+                                f"v{self.version.major}.{self.version.minor}.zip",
+                                "src.zip", signature=Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/protobuf-{self.version.major}.{self.version.minor}"
 

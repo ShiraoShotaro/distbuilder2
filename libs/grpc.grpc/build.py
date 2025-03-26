@@ -23,12 +23,11 @@ class Builder(BuilderBase):
     dep_ssl = Dependency("google.boringssl")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/grpc/grpc/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/grpc-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

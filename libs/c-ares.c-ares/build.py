@@ -14,12 +14,11 @@ class Builder(BuilderBase):
     option_Static = Option(bool, True, "Build static.")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/c-ares/c-ares/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/c-ares-{self.version.major}.{self.version.minor}.{self.version.patch}"
 
