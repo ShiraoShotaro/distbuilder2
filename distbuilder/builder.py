@@ -225,11 +225,16 @@ class BuilderBase:
 
             # deps に対して cmake toolchain を作る.
             self._toolchain = Toolchain(self.globalOptions.config)
-            for dep in self.dependencies:
-                if dep.isRequired(self):
-                    self._toolchain._builder = dep.builder
-                    dep.builder.export(self._toolchain)
-                    self._toolchain._builder = None
+
+            def _traverse(bld):
+                for dep in bld.dependencies:
+                    if dep.isRequired(bld):
+                        self._toolchain._builder = dep.builder
+                        dep.builder.export(self._toolchain)
+                        self._toolchain._builder = None
+                        _traverse(dep.builder)
+
+            _traverse(self)
             self.exportToolchainForBuild()
 
     def exportToolchainForBuild(self):

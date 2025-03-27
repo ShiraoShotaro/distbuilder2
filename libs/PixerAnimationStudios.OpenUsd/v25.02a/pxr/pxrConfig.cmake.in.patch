@@ -1,7 +1,7 @@
 --- pxr/pxrConfig.cmake.in
 +++ pxr/pxrConfig.cmake.in
-@@ -16,0 +17,4 @@
+@@ -15,0 +16,4 @@
 +
 +find_package(TBB REQUIRED COMPONENTS tbb)
 +
-+find_package(TBB REQUIRED COMPONENTS tbb)
++find_package(OpenSubdiv REQUIRED)

@@ -52,6 +52,4 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Release")
 
     def export(self, toolchain):
-        # TODO:
-        # toolchain.setDir("absl")
-        pass
+        toolchain.setDirpathVariable("libuhdr_ROOT", self.installDir, "libuhdr root")

@@ -4,6 +4,7 @@ from distbuilder import BuilderBase, Option, Dependency, Version
 class Builder(BuilderBase):
 
     signatures = {
+        Version(0, 1, 38, 10): "ed6852794350a3026cf1198cfe9af81097272d952de8e81b8ebc21ebd53a2275",
         Version(0, 1, 39, 3): "c0444b1e6e9d55c2ad8c997524b8f561c8d27cd374730fe6233a2573b6af2358",
     }
 

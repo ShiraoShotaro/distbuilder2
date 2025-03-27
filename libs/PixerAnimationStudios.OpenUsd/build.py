@@ -38,7 +38,10 @@ class Builder(BuilderBase):
     # MaterialX
     dep_MaterialX = Dependency("AcademySoftwareFoundation.MaterialX",
                                condition=lambda s: s.option_EnableMaterialX.value,
-                               overrideOptions={"Shared": True})
+                               overrideOptions={"Shared": True},
+                               versionVariant="0",
+                               versionMajor="1",
+                               versionMinor="38")
 
     def build(self):
         versionStr = f"{self.version.major:02d}.{self.version.minor:02d}"

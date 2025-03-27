@@ -10,11 +10,13 @@ class Blob:
         self._blobRoot = os.path.join(Preference.get().buildRootDirectory, "_blob")
 
     def _createDirectory(self, signature: str) -> str:
+        signature = signature.lower()
         dirpath = os.path.join(self._blobRoot, signature[0:2], signature[2:4])
         os.makedirs(dirpath, exist_ok=True)
         return dirpath
 
     def fetch(self, url: str, signature: str, *, ext: str = None) -> str:
+        signature = signature.lower()
         dirpath = self._createDirectory(signature)
         if ext is None:
             ext = os.path.splitext(url)[1]

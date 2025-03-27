@@ -50,4 +50,4 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Release")
 
     def export(self, toolchain):
-        toolchain.setDir("freetype")
+        toolchain.setDir("Freetype", "lib/cmake/freetype")
