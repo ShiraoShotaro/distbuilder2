@@ -42,6 +42,7 @@ class Builder(BuilderBase):
             "-DSPDLOG_MSVC_UTF8=1",
             "-DSPDLOG_FMT_EXTERNAL_HO=0",
             f"-DSPDLOG_USE_STD_FORMAT={not self.option_UseFmt.value}",
+            f"-DSPDLOG_FMT_EXTERNAL={self.option_UseFmt.value}",
         ]
 
         self.cmakeConfigure(srcPath, "build", configArgs)
