@@ -21,7 +21,8 @@ class Builder(BuilderBase):
     dep_protobuf = Dependency("protocolbuffers.protobuf")
     dep_utf8 = Dependency("protocolbuffers.utf8_range")
     dep_re2 = Dependency("google.re2")
-    dep_ssl = Dependency("google.boringssl")
+    dep_ssl = Dependency("google.boringssl",
+                         versionMinor="20241209")
 
     def build(self):
         self.download(
