@@ -7,16 +7,14 @@ class Builder(BuilderBase):
         Version(0, 11, 0, 0): "e17ed95300118c1d8091764692a16061ae03f8554e3d76da8276fd847d78b517",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/harfbuzz/harfbuzz/archive/refs/tags/"
             f"{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/harfbuzz-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

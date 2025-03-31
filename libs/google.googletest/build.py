@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 1, 16, 0): "a9607c9215866bd425a725610c5e0f739eeb50887a57903df48891446ce6fb3c",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -15,12 +14,11 @@ class Builder(BuilderBase):
     option_BuildGmock = Option(bool, False, "Build gmock")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/google/googletest/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/googletest-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

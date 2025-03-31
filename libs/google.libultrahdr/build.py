@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 1, 4, 0): "98BBCC32163AAB78137E5A8E87F34067CFB36CA167514622A838490207FD218D",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -17,12 +16,11 @@ class Builder(BuilderBase):
     dep_jpeg = Dependency("libjpeg-turbo.libjpeg-turbo")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/google/libultrahdr/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/libultrahdr-{self.version.major}.{self.version.minor}.{self.version.patch}"
 
@@ -54,6 +52,4 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Release")
 
     def export(self, toolchain):
-        # TODO:
-        # toolchain.setDir("absl")
-        pass
+        toolchain.setDirpathVariable("libuhdr_ROOT", self.installDir, "libuhdr root")

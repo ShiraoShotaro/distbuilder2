@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 2, 13, 3): "6B40AF9EA284135D6A5C905340D43B5003C799810B5804FFA8A2CF91EBE2CFF5",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -25,13 +24,12 @@ class Builder(BuilderBase):
                           condition=lambda self: self.option_WithZlib.value)
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://gitlab.freedesktop.org/freetype/freetype/-/archive/"
             f"VER-{self.version.major}-{self.version.minor}-{self.version.patch}/"
             f"freetype-VER-{self.version.major}-{self.version.minor}-{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/freetype-VER-{self.version.major}-{self.version.minor}-{self.version.patch}"
 
@@ -52,4 +50,4 @@ class Builder(BuilderBase):
         self.cmakeBuildAndInstall("build", "Release")
 
     def export(self, toolchain):
-        toolchain.setDir("freetype")
+        toolchain.setDir("Freetype", "lib/cmake/freetype")

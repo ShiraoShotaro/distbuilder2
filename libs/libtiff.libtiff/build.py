@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 4, 7, 0): "6431504A36FD864C8C83C4D0E2E18496E6968B4061D347988E20DF04C7BBDA96",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -24,13 +23,12 @@ class Builder(BuilderBase):
                                 overrideOptions={"ZlibSupport": True})
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://gitlab.com/libtiff/libtiff/-/archive/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}/"
             f"libtiff-v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/libtiff-v{self.version.major}.{self.version.minor}.{self.version.patch}"
 

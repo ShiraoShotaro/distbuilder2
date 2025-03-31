@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 3, 1, 0): "2ddfaadf8b660050ff066a03833416bf8500624f014877b80eff16e799f68e81",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -15,12 +14,11 @@ class Builder(BuilderBase):
     option_Shared = Option(bool, False, "Build shared")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/"
             f"{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/libjpeg-turbo-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

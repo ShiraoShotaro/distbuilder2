@@ -9,7 +9,6 @@ class Builder(BuilderBase):
     }
 
     versions = list(signatures.keys())
-    recipeVersion = 0
 
     option_BuildCompression = Option(bool, True, "Build compression")
     option_BuildDecompression = Option(bool, True, "Build decompression")
@@ -28,12 +27,11 @@ class Builder(BuilderBase):
                           condition=lambda builder: builder.option_ZlibSupport.value)
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/facebook/zstd/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/zstd-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

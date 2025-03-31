@@ -1,0 +1,16 @@
+--- cmake/defaults/Packages.cmake
++++ cmake/defaults/Packages.cmake
+@@ -142,2 +142,2 @@
+-find_package(TBB REQUIRED COMPONENTS tbb)
+-add_definitions(${TBB_DEFINITIONS})
++find_package(TBB REQUIRED CONFIG COMPONENTS tbb)
++# add_definitions(${TBB_DEFINITIONS})
+@@ -254 +254,7 @@
+-    find_package(OpenSubdiv 3 REQUIRED)
++    if (${PXR_BUILD_GPU_SUPPORT})
++        find_package(OpenSubdiv 3 REQUIRED CONFIG COMPONENTS osdCPU_static osdGPU_static)
++        set(OPENSUBDIV_LIBRARIES OpenSubdiv::osdCPU_static OpenSubdiv::osdGPU_static)
++    else()
++        find_package(OpenSubdiv 3 REQUIRED CONFIG COMPONENTS osdCPU_static)
++        set(OPENSUBDIV_LIBRARIES OpenSubdiv::osdGPU_static)
++    endif()

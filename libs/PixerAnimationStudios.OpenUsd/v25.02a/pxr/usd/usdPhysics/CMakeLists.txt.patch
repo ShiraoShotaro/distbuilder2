@@ -1,0 +1,9 @@
+--- pxr/usd/usdPhysics/CMakeLists.txt
++++ pxr/usd/usdPhysics/CMakeLists.txt
+@@ -17 +17 @@
+-        ${TBB_tbb_LIBRARY}
++        TBB::tbb
+@@ -19,2 +19 @@
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++

@@ -1,0 +1,9 @@
+--- pxr/usd/usdShade/CMakeLists.txt
++++ pxr/usd/usdShade/CMakeLists.txt
+@@ -16 +16 @@
+-        ${TBB_tbb_LIBRARY}
++        TBB::tbb
+@@ -18,2 +18 @@
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++

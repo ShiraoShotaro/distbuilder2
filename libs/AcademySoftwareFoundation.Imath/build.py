@@ -7,19 +7,17 @@ class Builder(BuilderBase):
         Version(0, 3, 1, 12): "82d8f31c46e73dba92525bea29c4fe077f6a7d3b978d5067a15030413710bf46",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
     option_Shared = Option(bool, False, "Build shared")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/AcademySoftwareFoundation/Imath/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/Imath-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

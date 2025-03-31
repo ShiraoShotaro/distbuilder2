@@ -1,0 +1,9 @@
+--- pxr/imaging/plugin/hdEmbree/CMakeLists.txt
++++ pxr/imaging/plugin/hdEmbree/CMakeLists.txt
+@@ -24 +24 @@
+-        ${TBB_tbb_LIBRARY}
++        TBB::tbb
+@@ -27,2 +27 @@
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++

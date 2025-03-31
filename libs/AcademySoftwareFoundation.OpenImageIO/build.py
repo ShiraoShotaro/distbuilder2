@@ -4,10 +4,10 @@ from distbuilder import BuilderBase, Option, Dependency, Version
 class Builder(BuilderBase):
 
     signatures = {
-        Version(3, 0, 4, 0): "D23607007EBEC38341033021156BF077EE5654EACA92E13742A7F9DA097D995A",
+        # Version(2, 5, 18, 0): "a999a45b5caccf370309e60b5d59622919c4a546aa6d0cec79cab0c361a380f9",
+        Version(3, 0, 4, 0): "d23607007ebec38341033021156bf077ee5654eaca92e13742a7f9da097d995a",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -19,22 +19,23 @@ class Builder(BuilderBase):
     dep_openexr = Dependency("AcademySoftwareFoundation.openexr")
     dep_libjpeg_turbo = Dependency("libjpeg-turbo.libjpeg-turbo")
     dep_libultrahdr = Dependency("google.libultrahdr")
-
     dep_libtiff = Dependency("libtiff.libtiff")
+    dep_libpng = Dependency("pnggroup.libpng")
+    dep_freetype = Dependency("freetype.freetype")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/refs/tags/"
             f"v{self.version.variant}.{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = ("src/OpenImageIO-"
                    f"{self.version.variant}.{self.version.major}.{self.version.minor}.{self.version.patch}")
 
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
+            f"-DBUILD_SHARED_LIB={self.option_Shared}",
             "-DOIIO_BUILD_PROFILER=0",
             "-DOIIO_BUILD_TESTS=0",
             "-DOIIO_BUILD_TOOLS=0",
@@ -42,11 +43,6 @@ class Builder(BuilderBase):
             "-DINSTALL_FONTS=0",
             "-DBUILD_DOCS=0",
             "-DUSE_PYTHON=0",
-            f"-DBUILD_SHARED_LIB={self.option_Shared}",
-            f"-DZLIB_ROOT={self.dep_zlib.generateBuilder(self).installDir}",
-            f"-DImath_DIR={self.dep_Imath.generateBuilder(self).installDir}/lib/cmake/Imath",
-            f"-DOpenEXR_DIR={self.dep_openexr.generateBuilder(self).installDir}/lib/cmake/OpenEXR",
-            f"-Dlibjpeg-turbo_DIR={self.dep_libjpeg_turbo.generateBuilder(self).installDir}/lib/cmake/libjpeg-turbo",
         ]
 
         self.cmakeConfigure(srcPath, "build", configArgs)

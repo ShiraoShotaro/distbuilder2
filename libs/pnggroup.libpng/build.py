@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 1, 6, 47): "D7EFC089968972FB79A4AB71BD9311F56C58A51B858A17BAB85D806EC48CC77A",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -17,12 +16,11 @@ class Builder(BuilderBase):
     dep_zlib = Dependency("madler.zlib")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/pnggroup/libpng/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/libpng-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

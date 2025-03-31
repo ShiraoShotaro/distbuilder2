@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 0, 20250127, 0): "f470da4226a532560e9ee69868da3598d9d37dc00408a56db83e2fd19e3e2ae6",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -17,12 +16,11 @@ class Builder(BuilderBase):
     # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/abseil/abseil-cpp/archive/refs/tags/"
             f"{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/abseil-cpp-{self.version.minor}.{self.version.patch}"
 

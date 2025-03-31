@@ -8,7 +8,6 @@ class Builder(BuilderBase):
         Version(0, 1, 68, 2): "2a17adb0d23768413ca85990dbf800a600863d272fcc37a9f67f3b5e34ae9174",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -25,12 +24,11 @@ class Builder(BuilderBase):
                          versionMinor="20241209")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/grpc/grpc/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/grpc-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

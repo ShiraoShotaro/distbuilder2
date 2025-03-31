@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 1, 34, 4): "5322aee0ecde764a82195e8c286a0d2682886cabf901d3003a86e0d2b6c777cf",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -15,12 +14,11 @@ class Builder(BuilderBase):
     option_Static = Option(bool, True, "Build static.")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/c-ares/c-ares/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/c-ares-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

@@ -7,7 +7,6 @@ class Builder(BuilderBase):
         Version(0, 2, 5, 0): "887270cae374a0b9e22b39647f9fc4bc742587fb26d6a221da2d2bbcf3109b0b",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -16,12 +15,11 @@ class Builder(BuilderBase):
     option_SingleFile = Option(bool, False, "Single file")
 
     def build(self):
-        self.download(
+        zipFile = self.download(
             "https://github.com/CLIUtils/CLI11/archive/refs/tags/"
             f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            "src.zip",
-            signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+            Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/CLI11-{self.version.major}.{self.version.minor}.{self.version.patch}"
 

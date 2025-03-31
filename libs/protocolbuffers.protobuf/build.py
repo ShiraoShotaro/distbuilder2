@@ -9,7 +9,6 @@ class Builder(BuilderBase):
         # Version(0, 30, 1, 0): "199f1bf1b6ad579590dd3666e1b1c5ef0c930b148d231d0da41b0867bf42994d",
     }
 
-    recipeVersion = 0
     versions = list(signatures.keys())
 
     # --- options ---
@@ -24,10 +23,10 @@ class Builder(BuilderBase):
 
     def build(self):
         # TODO: patch, rc対応してない
-        self.download("https://github.com/protocolbuffers/protobuf/archive/refs/tags/"
-                      f"v{self.version.major}.{self.version.minor}.zip",
-                      "src.zip", signature=Builder.signatures[self.version])
-        self.unzip("src.zip", "src")
+        zipFile = self.download("https://github.com/protocolbuffers/protobuf/archive/refs/tags/"
+                                f"v{self.version.major}.{self.version.minor}.zip",
+                                "src.zip", signature=Builder.signatures[self.version])
+        self.unzip(zipFile, "src")
 
         srcPath = f"src/protobuf-{self.version.major}.{self.version.minor}"
 

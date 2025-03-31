@@ -1,0 +1,10 @@
+--- pxr/base/tf/CMakeLists.txt
++++ pxr/base/tf/CMakeLists.txt
+@@ -117,4 +117,3 @@
+-        ${TBB_tbb_LIBRARY}
+-
+-    INCLUDE_DIRS
+-        ${TBB_INCLUDE_DIRS}
++        TBB::tbb
++
++
