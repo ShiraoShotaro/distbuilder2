@@ -45,9 +45,7 @@ class Builder(BuilderBase):
             f"-DSPDLOG_FMT_EXTERNAL={self.option_UseFmt.value}",
         ]
 
-        self.cmakeConfigure(srcPath, "build", configArgs)
-        self.cmakeBuildAndInstall("build", "Debug")
-        self.cmakeBuildAndInstall("build", "Release")
+        self.executeBuildAndInstall(srcPath, configArgs)
 
     def export(self, toolchain):
         toolchain.setDir("spdlog")

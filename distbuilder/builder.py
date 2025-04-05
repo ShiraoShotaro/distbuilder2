@@ -477,7 +477,8 @@ class BuilderBase:
         self._cmake(args, label=label)
 
     @_logTask
-    def cmakeConfigure(self, srcDir: str, buildDir: str, args: list, *, withToolchain: bool = True):
+    def cmakeConfigure(self, srcDir: str, buildDir: str, args: list, *,
+                       config: str = "", withToolchain: bool = True):
         srcDir = self._makeAbspath(srcDir)
         buildDir = self._makeAbspath(buildDir)
         toolchainFile = os.path.join(self.buildDir, "toolchain.cmake")
@@ -495,6 +496,8 @@ class BuilderBase:
         pargs += args
         if withToolchain is True:
             pargs.append(f"-DCMAKE_TOOLCHAIN_FILE={toolchainFile}")
+        if config:
+            pargs.append(f"-DCMAKE_BUILD_TYPE={config}")
         pargs += ["-S", srcDir, "-B", buildDir]
         self._cmake(pargs, label="configure")
 
@@ -522,6 +525,12 @@ class BuilderBase:
     def cmakeBuildAndInstall(self, buildDir: str, config: str, installPrefix: str = ""):
         self.cmakeBuild(buildDir, config)
         self.cmakeInstall(buildDir, config, installPrefix)
+
+    def executeBuildAndInstall(self, srcDir: str, configArgs, *,
+                               buildDir: str = "build"):
+        self.cmakeConfigure(srcDir, buildDir, configArgs)
+        for config in ["Debug", "Release"]:
+            self.cmakeBuildAndInstall(buildDir, config)
 
     @_logTask
     def copyFile(self, srcFile: str, destFile: str, *, allowOverwrite=False):

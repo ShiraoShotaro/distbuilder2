@@ -34,4 +34,4 @@ class Builder(BuilderBase):
             self.cmakeBuildAndInstall(f"build/{c}", c)
 
     def export(self, toolchain):
-        toolchain.setDir("glew")
+        toolchain.setDir("GLEW", "lib/cmake/glew")
