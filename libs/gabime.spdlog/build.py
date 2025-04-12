@@ -1,22 +1,33 @@
+from typing import Tuple
 from distbuilder import BuilderBase, Option, Dependency, Version
 
 
 class Builder(BuilderBase):
-
     signatures = {
-        Version(0, 1, 15, 0): "076f3b4d452b95433083bcc66d07f79addba2d3fcb2b9177abeb7367d47aefbb",
+        # Version(0, 1, 15, 0): "076f3b4d452b95433083bcc66d07f79addba2d3fcb2b9177abeb7367d47aefbb",
         Version(0, 1, 15, 1): "322c144e24abee5d0326ddbe5bbc0e0c39c85ac8c2cb3c90d10290a85428327a",
+        Version(0, 1, 15, 2): "322c144e24abee5d0326ddbe5bbc0e0c39c85ac8c2cb3c90d10290a85428327a",
     }
 
     versions = list(signatures.keys())
 
     # --- options ---
+    option_DisableDefaultLogger = Option(bool, False, "Disable default logger")
     option_Shared = Option(bool, False, "Build shared")
     option_UseFmt = Option(bool, False, "Use fmt lib.")
-    option_DisableDefaultLogger = Option(bool, False, "Disable default logger")
 
     # --- deps ---
-    dep_fmt = Dependency("fmtlib.fmt", condition=lambda self: self.option_UseFmt.value)
+    dep_fmt = Dependency("fmtlib.fmt")
+
+    def dependencies(self):
+        if self.option_UseFmt:
+            self.dep_fmt.require()
+
+    def downloadUrl(self) -> str:
+        return (
+            "https://github.com/gabime/spdlog/archive/refs/tags/"
+            f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip"
+        )
 
     def build(self):
         zipFile = self.download(

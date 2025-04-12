@@ -78,27 +78,36 @@ class _IOLogBuffer:
         return self._data
 
 
+# , version: str, options: dict, globalOptions: dict
+
+
 class BuilderBase:
-    def __init__(self, version: Union[Version, str], options: dict, globalOptions: GlobalOptions):
-        # Library Name
+    def __init__(self, depsConfValue: dict, globalOptions: GlobalOptions):
         self._libraryName = self.__class__.__module__.__name__
-
-        # Builder Script Path
         self._builderScriptPath = self.__class__.__module__.__file__
-
-        # Log
         self._logIndent = 0
-        self._logFp = None
+
+        # version
+        # -- 指定されないこともある. その場合はビルド実行できない.
+        self._version: Option[Version] = None
+        if self._libraryName in depsConfValue:
+            version = depsConfValue[self._libraryName].get("version", None)
+            if version is not None:
+                if isinstance(version, Version):
+                    self._version = version
+                else:
+                    self._version = self.generateVersion(version)
 
         # Global Options
         self._globalOptions: GlobalOptions = globalOptions
 
-        # version
-        self._version: Version = None
-        if isinstance(version, Version):
-            self._version = version
-        else:
-            self._version = self.generateVersion(version)
+        # deps config value
+        self._depsConfValue: dict = depsConfValue.copy()
+
+        # この builder に対する option values
+        optionValues = dict()
+        if self._libraryName in depsConfValue:
+            optionValues = depsConfValue[self._libraryName].get("options", dict())
 
         # option, dependency をピックアップする.
         self._options = list()
@@ -108,7 +117,7 @@ class BuilderBase:
                 m = getattr(self.__class__, member)
                 if isinstance(m, Option):
                     m._key = member[7:]
-                    opt = m.copy()
+                    opt = m._instantiate(self, optionValues.get(m._key))
                     setattr(self, member, opt)
                     self._options.append(opt)
             if member.startswith("dep_"):
@@ -120,41 +129,15 @@ class BuilderBase:
         self._options.sort(key=lambda v: v.key)
         self._dependencies.sort(key=lambda v: v.libraryName)
 
+        # Hash
+        self._hashData: Optional[dict] = None
+        self._hash: Option[str] = None
+
         # CMake toolchain
         self._toolchain: Optional[Toolchain] = None
 
-    @property
-    def libraryName(self) -> str:
-        """ ライブラリ名を取得 """
-        return self._libraryName
-
-    @property
-    def version(self) -> Version:
-        """ ビルドバージョンを取得. """
-        return self._version
-
-    @property
-    def globalOptions(self) -> GlobalOptions:
-        """ GlobalOption を取得. """
-        return self._globalOptions
-
-    @property
-    def buildDir(self) -> str:
-        self.updateHash()
-        return os.path.join(Preference.get().buildRootDirectory, self.libraryName, self._hash).replace("\\", "/")
-
-    @property
-    def installDir(self) -> str:
-        self.updateHash()
-        return os.path.join(Preference.get().installRootDirectory, self.libraryName, self._hash).replace("\\", "/")
-
-    @property
-    def allOptions(self) -> List[Option]:
-        return self._options.copy()
-
-    @property
-    def allDependencies(self) -> List[Dependency]:
-        return self._dependencies.copy()
+        # File Handle
+        self._fp = None
 
     def _setDirty(self):
         self._hash = None
@@ -259,6 +242,25 @@ class BuilderBase:
         with open(os.path.join(self.buildDir, "toolchain.cmake"), mode="w", encoding="utf-8") as fp:
             fp.write(self._toolchain.dump())
 
+    @property
+    def libraryName(self) -> str:
+        """ ライブラリ名を取得 """
+        return self._libraryName
+
+    @property
+    def version(self) -> Optional[Version]:
+        """ ビルドバージョンを取得. """
+        return self._version
+
+    @property
+    def availableVersions(cls) -> Set[Version]:
+        return set(cls.versions)
+
+    @property
+    def globalOptions(self) -> GlobalOptions:
+        """ GlobalOption を取得. """
+        return self._globalOptions
+
     # @property
     # def depsConfValue(self) -> dict:
     #     """ コンフィグを取得 """
@@ -285,6 +287,16 @@ class BuilderBase:
     def hashData(self) -> Optional[str]:
         """ ハッシュ元文字列データを取得. """
         return self._hashData
+
+    @property
+    def buildDir(self) -> str:
+        self.updateHash()
+        return os.path.join(Preference.get().buildRootDirectory, self.libraryName, self._hash).replace("\\", "/")
+
+    @property
+    def installDir(self) -> str:
+        self.updateHash()
+        return os.path.join(Preference.get().installRootDirectory, self.libraryName, self._hash).replace("\\", "/")
 
     @classmethod
     def generateVersion(cls, versionString: str) -> Version:

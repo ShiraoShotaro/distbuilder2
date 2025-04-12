@@ -42,6 +42,10 @@ class Dependency:
     def builder(self):
         return self._builder
 
+    def require(self):
+        # TODO: バージョンとか指定できるように.
+        pass
+
     def updateHash(self):
         self._builder.updateHash()
 

@@ -10,12 +10,19 @@ class Option:
         self._description = description
         self._value = None
 
-    def _instantiate(self, builder, value) -> "Option":
+    def copy(self) -> "Option":
         opt = Option(self._type, self._defaultValue, self._description)
+        opt._builder = self._builder
         opt._key = self._key
-        opt._builder = builder
-        opt._value = value
+        opt._value = self._value
         return opt
+
+    # def _instantiate(self, builder) -> "Option":
+    #     opt = Option(self._type, self._defaultValue, self._description)
+    #     opt._key = self._key
+    #     opt._builder = builder
+    #     opt._value = None
+    #     return opt
 
     @property
     def key(self) -> str:
@@ -53,3 +60,9 @@ class Option:
             return "1" if self.value else "0"
         else:
             return str(self.value)
+
+    def __bool__(self) -> bool:
+        if self._type is bool:
+            return self.value
+        else:
+            raise BuildError(f"Unconvertible to bool. Option: {self.key}")
