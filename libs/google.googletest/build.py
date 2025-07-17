@@ -12,6 +12,7 @@ class Builder(BuilderBase):
     # --- options ---
     option_Shared = Option(bool, False, "Build shared")
     option_BuildGmock = Option(bool, False, "Build gmock")
+    option_CXXStandard = Option(str, "17", "Use CXX Standard")
 
     def build(self):
         zipFile = self.download(
@@ -26,6 +27,7 @@ class Builder(BuilderBase):
             "-DCMAKE_DEBUG_POSTFIX=d",
             "-DINSTALL_GTEST=1",
             "-Dgtest_force_shared_crt=1",
+            f"-DCMAKE_CXX_STANDARD={self.option_CXXStandard.value}",
             f"-DBUILD_SHARED_LIBS={self.option_Shared}",
             f"-DBUILD_GMOCK={self.option_BuildGmock}"
         ]
