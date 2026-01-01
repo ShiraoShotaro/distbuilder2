@@ -5,12 +5,14 @@ class Builder(BuilderBase):
 
     signatures = {
         Version(0, 0, 20250127, 0): "f470da4226a532560e9ee69868da3598d9d37dc00408a56db83e2fd19e3e2ae6",
+        Version(0, 0, 20250814, 1): "7a56c409044fe02851302fba09fd00c9e06bd8160278f88e51122c76b44b6c00",
     }
 
     versions = list(signatures.keys())
 
     # --- options ---
     option_BuildMonilithicShared = Option(bool, True, "Build shared")
+    option_CXXStandard = Option(str, "20", "Use CXX Standard")
 
     # --- deps ---
     # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
@@ -26,6 +28,7 @@ class Builder(BuilderBase):
 
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
+            f"-DCMAKE_CXX_STANDARD={self.option_CXXStandard.value}",
             "-DBUILD_TESTING=0",
             f"-DABSL_BUILD_MONOLITHIC_SHARED_LIBS={self.option_BuildMonilithicShared}",
             "-DABSL_BUILD_TESTING=0",

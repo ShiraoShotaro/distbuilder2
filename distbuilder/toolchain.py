@@ -15,10 +15,12 @@ class Toolchain:
         path = self._builder.installDir
         if subpath:
             path += "/" + subpath.format(packageName=packageName)
-        self._dirs[self._builder.libraryName] = (packageName, path)
+        if self._builder.libraryName not in self._dirs:
+            self._dirs[self._builder.libraryName] = list()
+        self._dirs[self._builder.libraryName].append((packageName, path))
 
-    def getDir(self, libraryName: str) -> Tuple[Optional[str], Optional[str]]:
-        return self._dirs.get(libraryName, (None, None))
+    # def getDir(self, libraryName: str) -> Tuple[Optional[str], Optional[str]]:
+    #     return self._dirs.get(libraryName, (None, None))
 
     def setFilepathVariable(self, key: str, path: str, description: str):
         self._variables[key] = (f'"{path}"', "FILEPATH", description)
@@ -47,12 +49,12 @@ class Toolchain:
         reqs.append("# find packages")
         vars.append("# variables")
         post.append("# post scripts")
-        for packageName, path in self._dirs.values():
-            path = path.replace("\\", "/")
-            dirs.append(f'set({packageName}_DIR "{path}" CACHE FILEPATH "dirpath for {packageName}")')
-            if packageName not in self._packages:
-                reqs.append(f'find_package({packageName} REQUIRED CONFIG)')
-
+        for dir_items in self._dirs.values():
+            for packageName, path in dir_items:
+                path = path.replace("\\", "/")
+                dirs.append(f'set({packageName}_DIR "{path}" CACHE FILEPATH "dirpath for {packageName}")')
+                if packageName not in self._packages:
+                    reqs.append(f'find_package({packageName} REQUIRED CONFIG)')
         for packageName, options in self._packages.items():
             if options["required"] is True:
                 reqs.append(f'find_package({packageName} REQUIRED CONFIG)')
