@@ -6,6 +6,7 @@ class Builder(BuilderBase):
     signatures = {
         # Version(0, 1, 71, 0): "9313c3f8f4dd3341597f152d506a50caf571fe40f886e24ea9078891990df285",
         Version(0, 1, 68, 2): "2a17adb0d23768413ca85990dbf800a600863d272fcc37a9f67f3b5e34ae9174",
+        Version(0, 1, 78, 0): "dcaccdb284e8667f1a0b6d9aeb13ef9cea8e16aa873c606ab9c7d58be373e210",
     }
 
     versions = list(signatures.keys())
@@ -21,7 +22,8 @@ class Builder(BuilderBase):
     dep_utf8 = Dependency("protocolbuffers.utf8_range")
     dep_re2 = Dependency("google.re2")
     dep_ssl = Dependency("google.boringssl",
-                         versionMinor="20241209")
+                         # versionMinor="20241209"
+                        )
 
     def build(self):
         zipFile = self.download(
