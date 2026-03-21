@@ -490,7 +490,9 @@ class BuilderBase:
 
         generator = Preference.get().generator
         arch = Preference.get().architecture
-        pargs = ["-A", arch]
+        pargs = list()
+        if arch is not None:
+            pargs += ["-A", arch]
         if generator is not None:
             pargs += ["-G", generator]
         pargs += args

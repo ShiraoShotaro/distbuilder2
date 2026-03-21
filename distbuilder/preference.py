@@ -34,8 +34,8 @@ class Preference:
         return self._cfg["cmake"].get("generator")
 
     @property
-    def architecture(self) -> str:
-        return self._cfg["cmake"]["arch"]
+    def architecture(self) -> str | None:
+        return self._cfg["cmake"].get("arch", None)
 
     @property
     def cmakePath(self) -> str:
