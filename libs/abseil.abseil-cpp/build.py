@@ -6,6 +6,7 @@ class Builder(BuilderBase):
     signatures = {
         Version(0, 0, 20250127, 0): "f470da4226a532560e9ee69868da3598d9d37dc00408a56db83e2fd19e3e2ae6",
         Version(0, 0, 20250814, 1): "7a56c409044fe02851302fba09fd00c9e06bd8160278f88e51122c76b44b6c00",
+        Version(0, 0, 20260107, 0): "e72c12fa8b9ef0c12abddaf8a5060d93de9e8f7704a026b5b0207f2d6b80393c",
     }
 
     versions = list(signatures.keys())
@@ -27,6 +28,7 @@ class Builder(BuilderBase):
         srcPath = f"src/abseil-cpp-{self.version.minor}.{self.version.patch}"
 
         configArgs = [
+            f"-DCMAKE_CXX_STANDARD=17",
             "-DCMAKE_DEBUG_POSTFIX=d",
             f"-DCMAKE_CXX_STANDARD={self.option_CXXStandard.value}",
             "-DBUILD_TESTING=0",
