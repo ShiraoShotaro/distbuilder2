@@ -11,7 +11,7 @@ class Builder(BuilderBase):
     versions = list(signatures.keys())
 
     # --- options ---
-    option_Shared = Option(bool, False, "Build shared")
+    # option_Shared = Option(bool, False, "Build shared")
 
     def build(self):
         zipFile = self.download(
@@ -25,7 +25,7 @@ class Builder(BuilderBase):
 
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
-            f"-DBUILD_SHARED_LIBS={self.option_Shared}",
+            "-DBUILD_UTILS=OFF",
         ]
 
         for c in ["Debug", "Release"]:
