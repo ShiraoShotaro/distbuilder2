@@ -1,0 +1,6 @@
+# 一時的に
+# このディレクトリに install_manifest が作成されてしまうので, それを弾くため.
+
+*
+!build.py
+!.gitignore

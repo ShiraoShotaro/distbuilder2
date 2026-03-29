@@ -1,3 +1,4 @@
+import os
 from distbuilder import BuilderBase, Option, Dependency, Version
 
 
@@ -17,6 +18,10 @@ class Builder(BuilderBase):
     # dep_zlib = Dependency("madler.zlib", condition=lambda self: True)
 
     def build(self):
+        # 今の所 Windows ビルドは対応していない.
+        if os.name == "nt":
+            raise NotImplementedError("Windows build is not supported yet.")
+
         zipFile = self.download(
             "https://github.com/mongodb/mongo-cxx-driver/archive/refs/tags/"
             f"r{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
