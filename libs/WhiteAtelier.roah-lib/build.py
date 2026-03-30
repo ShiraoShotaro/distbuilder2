@@ -9,6 +9,7 @@ class Builder(BuilderBase):
         Version(0, 1, 0, 2): "14d2ff2dbfc7988d2b0495ac56a34ed6a791ddc731822b8eea742c422dc0be16",
         Version(0, 1, 0, 3): "31007ea2f01b5ef3f0d6e37cca1ab7ccd22df34d97e52117046b05d93621e324",
         Version(0, 1, 1, 0): "c48f802460cfa272c442f6b9fe4ad9373812101fada5f4b91d670921a4b04535",
+        Version(0, 1, 2, 0): "b4bc41f730bf08a3f7de1232eb1971cb7c794d1b192019699838dd3d5f3f6384",
     }
 
     versions = list(signatures.keys())
@@ -23,13 +24,16 @@ class Builder(BuilderBase):
     dep_toml11 = Dependency("ToruNiina.toml11", condition=lambda self: self.option_BuildRoahConfig)
 
     def build(self):
-        zipFile = self.download(
-            "https://github.com/WhiteAtelier/roah-lib/archive/refs/tags/"
-            f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
-            Builder.signatures[self.version])
-        self.unzip(zipFile, "src")
+        if (self.version.major == 0):
+            srcPath = "W:/works/programming/roah-lib"
+        else:
+            zipFile = self.download(
+                "https://github.com/WhiteAtelier/roah-lib/archive/refs/tags/"
+                f"v{self.version.major}.{self.version.minor}.{self.version.patch}.zip",
+                Builder.signatures[self.version])
+            self.unzip(zipFile, "src")
 
-        srcPath = f"src/roah-lib-{self.version.major}.{self.version.minor}.{self.version.patch}"
+            srcPath = f"src/roah-lib-{self.version.major}.{self.version.minor}.{self.version.patch}"
 
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
