@@ -18,6 +18,7 @@ class Builder(BuilderBase):
     option_BuildRoahAssert = Option(bool, True, "Build RoahAssert")
     option_BuildRoahLogger = Option(bool, True, "Build RoahLogger")
     option_BuildRoahConfig = Option(bool, True, "Build RoahConfig")
+    option_BuildURLParser = Option(bool, True, "Build URLParser")
 
     # --- deps ---
     dep_spdlog = Dependency("gabime.spdlog", condition=lambda self: self.option_BuildRoahLogger)
@@ -40,6 +41,7 @@ class Builder(BuilderBase):
             f"-DBUILD_ROAH_ASSERT={self.option_BuildRoahAssert}",
             f"-DBUILD_ROAH_LOGGER={self.option_BuildRoahLogger}",
             f"-DBUILD_ROAH_CONFIG={self.option_BuildRoahConfig}",
+            f"-DBUILD_URL_PARSER={self.option_BuildURLParser}",
         ]
 
         self.cmakeConfigure(srcPath, "build", configArgs)
