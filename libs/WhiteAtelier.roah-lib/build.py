@@ -21,11 +21,17 @@ class Builder(BuilderBase):
     option_BuildRoahAssert = Option(bool, True, "Build RoahAssert")
     option_BuildRoahLogger = Option(bool, True, "Build RoahLogger")
     option_BuildRoahConfig = Option(bool, True, "Build RoahConfig")
-    option_BuildURLParser = Option(bool, True, "Build URLParser")
+    option_BuildRoahURLParser = Option(bool, True, "Build RoahURLParser")
+    option_BuildRoahSubprocess = Option(bool, True, "Build RoahSubprocess")
+    
+    option_BuildRoahLoggingWebViewerApp = Option(bool, True, "Build RoahLoggingWebViewerApp")
 
     # --- deps ---
     dep_spdlog = Dependency("gabime.spdlog", condition=lambda self: self.option_BuildRoahLogger)
     dep_toml11 = Dependency("ToruNiina.toml11", condition=lambda self: self.option_BuildRoahConfig)
+    dep_ixwebsocket = Dependency("machinezone.IXWebSocket", condition=lambda self: self.option_BuildRoahLoggingWebViewerApp)
+    dep_nlohmann_json = Dependency("nlohmann.json", condition=lambda self: self.option_BuildRoahLoggingWebViewerApp)
+    dep_cli11 = Dependency("CLIUtils.CLI11", condition=lambda self: self.option_BuildRoahLoggingWebViewerApp)
 
     def build(self):
         if (self.version.major == 0):
@@ -42,9 +48,11 @@ class Builder(BuilderBase):
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
             f"-DBUILD_ROAH_ASSERT={self.option_BuildRoahAssert}",
+            f"-DBUILD_ROAH_SUBPROCESS={self.option_BuildRoahSubprocess}",
             f"-DBUILD_ROAH_LOGGER={self.option_BuildRoahLogger}",
             f"-DBUILD_ROAH_CONFIG={self.option_BuildRoahConfig}",
-            f"-DBUILD_URL_PARSER={self.option_BuildURLParser}",
+            f"-DBUILD_ROAH_URL_PARSER={self.option_BuildRoahURLParser}",
+            f"-DBUILD_ROAH_LOGGING_WEB_VIEWER_APP={self.option_BuildRoahLoggingWebViewerApp}"
         ]
 
         self.cmakeConfigure(srcPath, "build", configArgs)
