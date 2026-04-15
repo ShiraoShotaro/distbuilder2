@@ -13,6 +13,7 @@ class Builder(BuilderBase):
         Version(0, 1, 3, 0): "59e981bf41af64323f094ba324a66be8bf399c3e8d97a9ff6deb30676aa3a699",
         Version(0, 1, 4, 0): "622a5c2ec6720e0a315d5b1940bf7d13893c6f28b420a1dd14c2c83a48e44e6f",
         Version(0, 1, 5, 0): "23f4ce974502d7c0deb998529f3af9466b0f3d0c111aff7bc0ee32ba91a54496",
+        Version(0, 1, 5, 1): "736ac240dc71bd030b0ea3c3897a841d88593179448166c432570f790d709ec7",
     }
 
     versions = list(signatures.keys())
