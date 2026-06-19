@@ -20,12 +20,14 @@ class Builder(BuilderBase):
         Version(0, 1, 8, 1): "fe7e005f02f87694b1755020b16b9ebe4c9897cd361c909046b1148c9cede58c",
         Version(0, 1, 8, 2): "b9b2d693f37d07b6bfea4581477585231e6788ee0849a725434c6a185b973352",
         Version(0, 1, 8, 3): "e8370f767f3c637e0d0a008e5f25c49955eb9b8bc9d0db5deb58b0701ac06d7e",
+        Version(0, 1, 9, 0): "f613c8e533d30f4ebaaed93903ec50803dd719d0703dcb0516ca62676a9b31c5",
     }
 
     versions = list(signatures.keys())
 
     # --- options ---
     option_BuildRoahAssert = Option(bool, True, "Build RoahAssert")
+    option_BuildRoahEnv    = Option(bool, True, "Build RoahEnv")
     option_BuildRoahLogger = Option(bool, True, "Build RoahLogger")
     option_BuildRoahString = Option(bool, True, "Build RoahString")
     option_BuildRoahConfig = Option(bool, True, "Build RoahConfig")
@@ -56,6 +58,7 @@ class Builder(BuilderBase):
         configArgs = [
             "-DCMAKE_DEBUG_POSTFIX=d",
             f"-DBUILD_ROAH_ASSERT={self.option_BuildRoahAssert}",
+            f"-DBUILD_ROAH_ENV={self.option_BuildRoahEnv}",
             f"-DBUILD_ROAH_STRING={self.option_BuildRoahString}",
             f"-DBUILD_ROAH_SUBPROCESS={self.option_BuildRoahSubprocess}",
             f"-DBUILD_ROAH_LOGGER={self.option_BuildRoahLogger}",
