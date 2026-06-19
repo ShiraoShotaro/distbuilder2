@@ -5,6 +5,7 @@ class Builder(BuilderBase):
 
     signatures = {
         Version(0, 3, 1, 12): "82d8f31c46e73dba92525bea29c4fe077f6a7d3b978d5067a15030413710bf46",
+        Version(0, 3, 2, 2): "9eef810d2a3abf7b7f0bb694948317d3aa0e8d5d501c40f725d1123e12052777",
     }
 
     versions = list(signatures.keys())
