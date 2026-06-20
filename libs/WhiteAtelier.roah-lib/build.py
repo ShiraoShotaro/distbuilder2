@@ -23,6 +23,7 @@ class Builder(BuilderBase):
         Version(0, 1, 9, 0): "f613c8e533d30f4ebaaed93903ec50803dd719d0703dcb0516ca62676a9b31c5",
         Version(0, 1, 9, 1): "271e2e40eb6b3b7d5c69d279b7825539f25e4ebc355ac165824330126b221074",
         Version(0, 1, 9, 2): "34c91f80f30c54589b78ef7e070bc7cd74cef3f9f83512b2bdd75385e95ba273",
+        Version(0, 1, 10, 0): "e49731fc5cf0826adbe082796f425df0fe1a8671edb266d0c901bdab57368845",
     }
 
     versions = list(signatures.keys())
@@ -37,6 +38,8 @@ class Builder(BuilderBase):
     option_BuildRoahSubprocess = Option(bool, True, "Build RoahSubprocess")
     
     option_BuildRoahLoggingWebViewerApp = Option(bool, True, "Build RoahLoggingWebViewerApp")
+
+    option_EnableLoggerWebvSink = Option(bool, True, "Enable Logger Webv Sink")
 
     # --- deps ---
     dep_spdlog = Dependency("gabime.spdlog", condition=lambda self: self.option_BuildRoahLogger)
@@ -57,17 +60,34 @@ class Builder(BuilderBase):
 
             srcPath = f"src/roah-lib-{self.version.major}.{self.version.minor}.{self.version.patch}"
 
-        configArgs = [
-            "-DCMAKE_DEBUG_POSTFIX=d",
-            f"-DBUILD_ROAH_ASSERT={self.option_BuildRoahAssert}",
-            f"-DBUILD_ROAH_ENV={self.option_BuildRoahEnv}",
-            f"-DBUILD_ROAH_STRING={self.option_BuildRoahString}",
-            f"-DBUILD_ROAH_SUBPROCESS={self.option_BuildRoahSubprocess}",
-            f"-DBUILD_ROAH_LOGGER={self.option_BuildRoahLogger}",
-            f"-DBUILD_ROAH_CONFIG={self.option_BuildRoahConfig}",
-            f"-DBUILD_ROAH_URL_PARSER={self.option_BuildRoahURLParser}",
-            f"-DBUILD_ROAH_LOGGING_WEB_VIEWER_APP={self.option_BuildRoahLoggingWebViewerApp}"
-        ]
+        if self.version < Version(0, 1, 10, 0):
+            configArgs = [
+                "-DCMAKE_DEBUG_POSTFIX=d",
+                f"-DBUILD_ROAH_ASSERT={self.option_BuildRoahAssert}",
+                f"-DBUILD_ROAH_ENV={self.option_BuildRoahEnv}",
+                f"-DBUILD_ROAH_STRING={self.option_BuildRoahString}",
+                f"-DBUILD_ROAH_SUBPROCESS={self.option_BuildRoahSubprocess}",
+                f"-DBUILD_ROAH_LOGGER={self.option_BuildRoahLogger}",
+                f"-DBUILD_ROAH_CONFIG={self.option_BuildRoahConfig}",
+                f"-DBUILD_ROAH_URL_PARSER={self.option_BuildRoahURLParser}",
+                f"-DBUILD_ROAH_LOGGING_WEB_VIEWER_APP={self.option_BuildRoahLoggingWebViewerApp}"
+            ]
+        else:
+            configArgs = [
+                "-DCMAKE_DEBUG_POSTFIX=d",
+                f"-DLIBROAH_BUILD_ASSERT={self.option_BuildRoahAssert}",
+                f"-DLIBROAH_BUILD_ENV={self.option_BuildRoahEnv}",
+                f"-DLIBROAH_BUILD_STRING={self.option_BuildRoahString}",
+                f"-DLIBROAH_BUILD_SUBPROCESS={self.option_BuildRoahSubprocess}",
+                f"-DLIBROAH_BUILD_LOGGER={self.option_BuildRoahLogger}",
+                f"-DLIBROAH_BUILD_CONFIG={self.option_BuildRoahConfig}",
+                f"-DLIBROAH_BUILD_URL_PARSER={self.option_BuildRoahURLParser}",
+                f"-DLIBROAH_BUILD_LOGGER_WEB_VIEWER_APP={self.option_BuildRoahLoggingWebViewerApp}",
+                f"-DLIBROAH_ENABLE_LOGGER_WEBV_SINK={self.option_EnableLoggerWebvSink}",
+                "-DLIBROAH_INSTALL=ON",
+                "-DLIBROAH_BUILD_TESTS=OFF",
+                "-DLIBROAH_BUILD_DOCS=OFF",
+            ]
 
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
