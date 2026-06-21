@@ -24,6 +24,7 @@ class Builder(BuilderBase):
         Version(0, 1, 9, 1): "271e2e40eb6b3b7d5c69d279b7825539f25e4ebc355ac165824330126b221074",
         Version(0, 1, 9, 2): "34c91f80f30c54589b78ef7e070bc7cd74cef3f9f83512b2bdd75385e95ba273",
         Version(0, 1, 10, 0): "e49731fc5cf0826adbe082796f425df0fe1a8671edb266d0c901bdab57368845",
+        Version(0, 1, 10, 1): "c4489b8e6343d6b0b0e17559583b39933b2e479356d8df2e09142336dadbcb6d",
     }
 
     versions = list(signatures.keys())
@@ -84,10 +85,12 @@ class Builder(BuilderBase):
                 f"-DLIBROAH_BUILD_URL_PARSER={self.option_BuildRoahURLParser}",
                 f"-DLIBROAH_BUILD_LOGGER_WEB_VIEWER_APP={self.option_BuildRoahLoggingWebViewerApp}",
                 f"-DLIBROAH_ENABLE_LOGGER_WEBV_SINK={self.option_EnableLoggerWebvSink}",
-                "-DLIBROAH_INSTALL=ON",
                 "-DLIBROAH_BUILD_TESTS=OFF",
                 "-DLIBROAH_BUILD_DOCS=OFF",
             ]
+
+            if self.version == Version(0, 1, 10, 0):
+                configArgs.append("-DLIBROAH_INSTALL=ON")
 
         self.cmakeConfigure(srcPath, "build", configArgs)
         self.cmakeBuildAndInstall("build", "Debug")
